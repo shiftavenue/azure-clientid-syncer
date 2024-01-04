@@ -1,0 +1,20 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  labels:
+    app: '{{ template "aks-clientid-syncer-webhook.name" . }}'
+    aks-clientid-syncer-webhook.io/system: "true"
+    chart: '{{ template "aks-clientid-syncer-webhook.name" . }}'
+    release: '{{ .Release.Name }}'
+  name: aks-clientid-syncer-webhook-manager-role
+rules:
+- apiGroups:
+  - admissionregistration.k8s.io
+  resources:
+  - mutatingwebhookconfigurations
+  verbs:
+  - get
+  - list
+  - update
+  - watch

@@ -1,0 +1,38 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  annotations:
+    {{- toYaml .Values.mutatingWebhookAnnotations | nindent 4 }}
+  labels:
+    app: '{{ template "aks-clientid-syncer-webhook.name" . }}'
+    aks-clientid-syncer-webhook.io/system: "true"
+    chart: '{{ template "aks-clientid-syncer-webhook.name" . }}'
+    release: '{{ .Release.Name }}'
+  name: aks-clientid-syncer-webhook-mutating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: aks-clientid-syncer-webhook-webhook-service
+      namespace: '{{ .Release.Namespace }}'
+      path: /mutate-v1-serviceaccount
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: mutation.aks-clientid-syncer-webhook.io
+  namespaceSelector: {{- toYaml .Values.mutatingWebhookNamespaceSelector | nindent 4 }}
+  objectSelector:
+    matchLabels:
+      aks.clientid.syncer/use: "true"
+  reinvocationPolicy: IfNeeded
+  rules:
+  - apiGroups:
+    - ""
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    resources:
+    - serviceaccounts
+  sideEffects: None

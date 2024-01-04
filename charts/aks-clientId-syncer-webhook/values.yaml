@@ -1,0 +1,47 @@
+# Default values for aks-clientid-syncer-webhook.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 2
+image:
+  repository: felixwenzel/aks-clientid-syncer
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  release: 0.0.19
+imagePullSecrets: []
+nodeSelector:
+  kubernetes.io/os: linux
+resources:
+  limits:
+    cpu: 100m
+    memory: 30Mi
+  requests:
+    cpu: 100m
+    memory: 20Mi
+tolerations: []
+affinity: {}
+service:
+  type: ClusterIP
+  port: 443
+  targetPort: 9443
+azureEnvironment: AzurePublicCloud
+azureTenantID: "89d9f854-0bfb-4711-aa04-78c9934412d1"
+autoDetectOidcIssuerUrl: "true"
+oidcIssuerUrl: ""
+metricsAddr: ":8095"
+metricsBackend: prometheus
+logLevel: 0
+priorityClassName: system-cluster-critical
+mutatingWebhookAnnotations: {}
+podLabels:
+  azure.workload.identity/use: "true"
+podAnnotations: {}
+mutatingWebhookNamespaceSelector: {}
+# minAvailable and maxUnavailable are mutually exclusive
+podDisruptionBudget:
+  minAvailable: 1
+  # maxUnavailable: 0
+serviceAccount:
+  annotations:
+    azure.workload.identity/client-id: "8ff5df65-e2dd-4cac-8c6c-35e6b2d88e7d"
+    azure.workload.identity/tenant-id: "89d9f854-0bfb-4711-aa04-78c9934412d1"

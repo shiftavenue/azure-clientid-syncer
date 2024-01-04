@@ -1,0 +1,17 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app: '{{ template "aks-clientid-syncer-webhook.name" . }}'
+    aks-clientid-syncer-webhook.io/system: "true"
+    chart: '{{ template "aks-clientid-syncer-webhook.name" . }}'
+    release: '{{ .Release.Name }}'
+  name: aks-clientid-syncer-webhook-manager-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: aks-clientid-syncer-webhook-manager-role
+subjects:
+- kind: ServiceAccount
+  name: aks-clientid-syncer-webhook-admin
+  namespace: '{{ .Release.Namespace }}'
