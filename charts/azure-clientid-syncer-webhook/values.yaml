@@ -4,7 +4,7 @@
 
 replicaCount: 2
 image:
-  repository: felixwenzel/azure-clientid-syncer
+  repository: ghcr.io/shiftavenue/azure-clientid-syncer
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   # release: 0.0.19

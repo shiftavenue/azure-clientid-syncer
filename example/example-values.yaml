@@ -1,0 +1,8 @@
+azureTenantID: "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+
+podLabels:
+  azure.workload.identity/use: "true"
+serviceAccount:
+  annotations:
+    azure.workload.identity/client-id: "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+    azure.workload.identity/tenant-id: "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"

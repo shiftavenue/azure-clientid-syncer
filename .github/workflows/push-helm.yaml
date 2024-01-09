@@ -1,10 +1,12 @@
 name: Release Charts
 
 on:
-  workflow_run:
-    workflows: [Init Release]
-    types:
-      - completed
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/chart.yaml"
+      - "charts/**"
 
 jobs:
   release:
@@ -20,7 +22,6 @@ jobs:
         run: |
           RELEASE_VERSION=$(gh release view --jq '.name[1:]' --json name)
           cd charts/azure-clientid-syncer-webhook
-          sed -i "s@version:.*@version: $RELEASE_VERSION@g" Chart.yaml
           sed -i "s@appVersion:.*@appVersion: $RELEASE_VERSION@g" Chart.yaml
           cat Chart.yaml
         env:
@@ -33,5 +34,8 @@ jobs:
 
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.5.0
+        with:
+          charts_dir: charts
+          skip_existing: true
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
