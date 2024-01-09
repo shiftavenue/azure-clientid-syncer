@@ -1,4 +1,4 @@
-module github.com/shiftavenue/aks-clientid-syncer
+module github.com/shiftavenue/azure-clientid-syncer
 
 go 1.21.5
 
