@@ -37,7 +37,7 @@ spec:
         command:
         - /manager
         env:
-        - name: POD_NAMESPACE
+        - name: SA_NAMESPACE
           valueFrom:
             fieldRef:
               apiVersion: v1
