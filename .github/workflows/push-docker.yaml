@@ -1,16 +1,13 @@
 name: Deploy Images to GHCR
 
 on:
-  push:
+  create:
     tags:
       - "v*.*.*"
 
 jobs:
   push-image:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: "./azure-clientid-syncer"
     steps:
       - name: "Checkout GitHub Action"
         uses: actions/checkout@main
