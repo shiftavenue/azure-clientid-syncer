@@ -8,10 +8,10 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/open-policy-agent/cert-controller/pkg/rotator"
-	"github.com/shiftavenue/aks-clientid-syncer/pkg/metrics"
-	"github.com/shiftavenue/aks-clientid-syncer/pkg/util"
-	"github.com/shiftavenue/aks-clientid-syncer/pkg/version"
-	wh "github.com/shiftavenue/aks-clientid-syncer/pkg/webhook"
+	"github.com/shiftavenue/azure-clientid-syncer/pkg/metrics"
+	"github.com/shiftavenue/azure-clientid-syncer/pkg/util"
+	"github.com/shiftavenue/azure-clientid-syncer/pkg/version"
+	wh "github.com/shiftavenue/azure-clientid-syncer/pkg/webhook"
 	"go.uber.org/zap/zapcore"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -30,16 +30,16 @@ import (
 
 var webhooks = []rotator.WebhookInfo{
 	{
-		Name: "aks-clientid-syncer-webhook-mutating-webhook-configuration",
+		Name: "azure-clientid-syncer-webhook-mutating-webhook-configuration",
 		Type: rotator.Mutating,
 	},
 }
 
 const (
-	secretName     = "aks-clientid-syncer-webhook-server-cert" // #nosec
-	serviceName    = "aks-clientid-syncer-webhook-webhook-service"
-	caName         = "aks-clientid-syncer-ca"
-	caOrganization = "aks-clientid-syncer"
+	secretName     = "azure-clientid-syncer-webhook-server-cert" // #nosec
+	serviceName    = "azure-clientid-syncer-webhook-webhook-service"
+	caName         = "azure-clientid-syncer-ca"
+	caOrganization = "azure-clientid-syncer"
 )
 
 var (

@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   labels:
-    aks.clientid.syncer/use: "true"
+    azure.clientid.syncer/use: "true"
   name: testsa
 ---
 apiVersion: v1

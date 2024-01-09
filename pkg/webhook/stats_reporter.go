@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	requestDurationMetricName = "akscs_mutation_request"
+	requestDurationMetricName = "azurecs_mutation_request"
 
 	namespaceKey = "namespace"
 )
@@ -28,7 +28,7 @@ func registerMetrics() error {
 
 	req, err = meter.Float64Histogram(
 		requestDurationMetricName,
-		metric.WithDescription("Distribution of how long it took for the aks-clientid-syncer mutation request"))
+		metric.WithDescription("Distribution of how long it took for the azure-clientid-syncer mutation request"))
 
 	return err
 }

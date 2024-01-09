@@ -4,27 +4,27 @@ metadata:
   annotations:
     {{- toYaml .Values.mutatingWebhookAnnotations | nindent 4 }}
   labels:
-    app: '{{ template "aks-clientid-syncer-webhook.name" . }}'
-    aks-clientid-syncer-webhook.io/system: "true"
-    chart: '{{ template "aks-clientid-syncer-webhook.name" . }}'
+    app: '{{ template "azure-clientid-syncer-webhook.name" . }}'
+    azure-clientid-syncer-webhook.io/system: "true"
+    chart: '{{ template "azure-clientid-syncer-webhook.name" . }}'
     release: '{{ .Release.Name }}'
-  name: aks-clientid-syncer-webhook-mutating-webhook-configuration
+  name: azure-clientid-syncer-webhook-mutating-webhook-configuration
 webhooks:
 - admissionReviewVersions:
   - v1
   - v1beta1
   clientConfig:
     service:
-      name: aks-clientid-syncer-webhook-webhook-service
+      name: azure-clientid-syncer-webhook-webhook-service
       namespace: '{{ .Release.Namespace }}'
       path: /mutate-v1-serviceaccount
   failurePolicy: Fail
   matchPolicy: Equivalent
-  name: mutation.aks-clientid-syncer-webhook.io
+  name: mutation.azure-clientid-syncer-webhook.io
   namespaceSelector: {{- toYaml .Values.mutatingWebhookNamespaceSelector | nindent 4 }}
   objectSelector:
     matchLabels:
-      aks.clientid.syncer/use: "true"
+      azure.clientid.syncer/use: "true"
   reinvocationPolicy: IfNeeded
   rules:
   - apiGroups:

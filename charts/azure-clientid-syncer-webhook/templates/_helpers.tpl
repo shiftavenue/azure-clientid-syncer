@@ -1,7 +1,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "aks-clientid-syncer-webhook.name" -}}
+{{- define "azure-clientid-syncer-webhook.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -10,7 +10,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "aks-clientid-syncer-webhook.fullname" -}}
+{{- define "azure-clientid-syncer-webhook.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -26,16 +26,16 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "aks-clientid-syncer-webhook.chart" -}}
+{{- define "azure-clientid-syncer-webhook.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "aks-clientid-syncer-webhook.labels" -}}
-helm.sh/chart: {{ include "aks-clientid-syncer-webhook.chart" . }}
-{{ include "aks-clientid-syncer-webhook.selectorLabels" . }}
+{{- define "azure-clientid-syncer-webhook.labels" -}}
+helm.sh/chart: {{ include "azure-clientid-syncer-webhook.chart" . }}
+{{ include "azure-clientid-syncer-webhook.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -45,15 +45,15 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "aks-clientid-syncer-webhook.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "aks-clientid-syncer-webhook.name" . }}
+{{- define "azure-clientid-syncer-webhook.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "azure-clientid-syncer-webhook.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Adds the pod labels.
 */}}
-{{- define "aks-clientid-syncer-webhook.podLabels" -}}
+{{- define "azure-clientid-syncer-webhook.podLabels" -}}
 {{- if .Values.podLabels }}
 {{- toYaml .Values.podLabels | nindent 8 }}
 {{- end }}

@@ -1,10 +1,10 @@
-# Default values for aks-clientid-syncer-webhook.
+# Default values for azure-clientid-syncer-webhook.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
 replicaCount: 2
 image:
-  repository: felixwenzel/aks-clientid-syncer
+  repository: felixwenzel/azure-clientid-syncer
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   release: 0.0.19
@@ -25,7 +25,8 @@ service:
   port: 443
   targetPort: 9443
 azureEnvironment: AzurePublicCloud
-azureTenantID: "89d9f854-0bfb-4711-aa04-78c9934412d1"
+# enter your tenant ID here. If you leave this empty, the webhook will try to auto-detect the tenant ID.
+azureTenantID: ""
 autoDetectOidcIssuerUrl: "true"
 oidcIssuerUrl: ""
 metricsAddr: ":8095"
@@ -33,8 +34,9 @@ metricsBackend: prometheus
 logLevel: 0
 priorityClassName: system-cluster-critical
 mutatingWebhookAnnotations: {}
-podLabels:
-  azure.workload.identity/use: "true"
+# e.g. using azure workload identity with this webhook by by enabling it via label:
+# azure.workload.identity/use: "true"
+podLabels: {}
 podAnnotations: {}
 mutatingWebhookNamespaceSelector: {}
 # minAvailable and maxUnavailable are mutually exclusive
@@ -42,6 +44,7 @@ podDisruptionBudget:
   minAvailable: 1
   # maxUnavailable: 0
 serviceAccount:
-  annotations:
-    azure.workload.identity/client-id: "8ff5df65-e2dd-4cac-8c6c-35e6b2d88e7d"
-    azure.workload.identity/tenant-id: "89d9f854-0bfb-4711-aa04-78c9934412d1"
+  # e.g. using azure workload identity with this service by setting the client ID and tenant ID:
+  # azure.workload.identity/client-id: "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+  # azure.workload.identity/tenant-id: "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+  annotations: {}

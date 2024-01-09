@@ -12,12 +12,12 @@ COPY go.sum go.sum
 RUN go mod download
 
 # Copy the go source
-COPY cmd/aks-clientid-syncer/main.go main.go
+COPY cmd/azure-clientid-syncer/main.go main.go
 COPY pkg/ pkg/
 
 # Build
 ARG TARGETARCH
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} GO111MODULE=on go build -a -ldflags "${LDFLAGS:--X github.com/shiftavenue/aks-clientid-syncer/pkg/version.BuildVersion=latest}" -o manager main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} GO111MODULE=on go build -a -ldflags "${LDFLAGS:--X github.com/shiftavenue/azure-clientid-syncer/pkg/version.BuildVersion=latest}" -o manager main.go
 
 FROM --platform=${TARGETPLATFORM:-linux/amd64} mcr.microsoft.com/cbl-mariner/distroless/minimal:2.0-nonroot
 WORKDIR /

@@ -1,9 +1,0 @@
-apiVersion: v2
-name: aks-clientid-syncer-webhook
-description: A Helm chart to install the aks-clientid-syncer webhook
-type: application
-version: 0.0.1
-appVersion: 0.0.1
-home: https://github.com/shiftavenue/aks-clientid-syncer
-sources:
-  - https://github.com/shiftavenue/aks-clientid-syncer

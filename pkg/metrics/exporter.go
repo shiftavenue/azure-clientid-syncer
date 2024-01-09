@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/shiftavenue/aks-clientid-syncer/pkg/metrics/prometheus"
+	"github.com/shiftavenue/azure-clientid-syncer/pkg/metrics/prometheus"
 )
 
 func InitMetricsExporter(metricsBackend string) error {

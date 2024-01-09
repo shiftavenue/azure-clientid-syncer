@@ -8,20 +8,20 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"github.com/shiftavenue/aks-clientid-syncer/pkg/az"
-	"github.com/shiftavenue/aks-clientid-syncer/pkg/config"
-	"github.com/shiftavenue/aks-clientid-syncer/pkg/kuberneteshelper"
+	"github.com/shiftavenue/azure-clientid-syncer/pkg/az"
+	"github.com/shiftavenue/azure-clientid-syncer/pkg/config"
+	"github.com/shiftavenue/azure-clientid-syncer/pkg/kuberneteshelper"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-// +kubebuilder:webhook:path=/mutate-v1-serviceaccount,mutating=true,failurePolicy=fail,groups="",resources=serviceaccounts,verbs=create,versions=v1,name=mutation.aks-clientid-syncer-webhook.io,sideEffects=None,admissionReviewVersions=v1;v1beta1,matchPolicy=Equivalent,reinvocationPolicy=IfNeeded
+// +kubebuilder:webhook:path=/mutate-v1-serviceaccount,mutating=true,failurePolicy=fail,groups="",resources=serviceaccounts,verbs=create,versions=v1,name=mutation.azure-clientid-syncer-webhook.io,sideEffects=None,admissionReviewVersions=v1;v1beta1,matchPolicy=Equivalent,reinvocationPolicy=IfNeeded
 // +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;update
 
 // this is required for the webhook server certs generated and rotated as part of cert-controller rotator
-// +kubebuilder:rbac:groups="",namespace=aks-clientid-syncer-webhook-system,resources=secrets,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",namespace=azure-clientid-syncer-webhook-system,resources=secrets,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=mutatingwebhookconfigurations,verbs=get;list;watch;update
 
 // serviceAccountMutator mutates serviceAccount objects to add clientid and tenantid annotations

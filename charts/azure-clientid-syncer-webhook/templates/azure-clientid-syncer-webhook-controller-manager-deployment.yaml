@@ -2,29 +2,29 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: '{{ template "aks-clientid-syncer-webhook.name" . }}'
-    aks-clientid-syncer-webhook.io/system: "true"
-    chart: '{{ template "aks-clientid-syncer-webhook.name" . }}'
+    app: '{{ template "azure-clientid-syncer-webhook.name" . }}'
+    azure-clientid-syncer-webhook.io/system: "true"
+    chart: '{{ template "azure-clientid-syncer-webhook.name" . }}'
     release: '{{ .Release.Name }}'
-  name: aks-clientid-syncer-webhook-controller-manager
+  name: azure-clientid-syncer-webhook-controller-manager
   namespace: '{{ .Release.Namespace }}'
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: '{{ template "aks-clientid-syncer-webhook.name" . }}'
-      aks-clientid-syncer-webhook.io/system: "true"
-      chart: '{{ template "aks-clientid-syncer-webhook.name" . }}'
+      app: '{{ template "azure-clientid-syncer-webhook.name" . }}'
+      azure-clientid-syncer-webhook.io/system: "true"
+      chart: '{{ template "azure-clientid-syncer-webhook.name" . }}'
       release: '{{ .Release.Name }}'
   template:
     metadata:
       annotations:
         {{- toYaml .Values.podAnnotations | trim | nindent 8 }}
       labels:
-{{- include "aks-clientid-syncer-webhook.podLabels" . }}
-        app: '{{ template "aks-clientid-syncer-webhook.name" . }}'
-        aks-clientid-syncer-webhook.io/system: "true"
-        chart: '{{ template "aks-clientid-syncer-webhook.name" . }}'
+{{- include "azure-clientid-syncer-webhook.podLabels" . }}
+        app: '{{ template "azure-clientid-syncer-webhook.name" . }}'
+        azure-clientid-syncer-webhook.io/system: "true"
+        chart: '{{ template "azure-clientid-syncer-webhook.name" . }}'
         release: '{{ .Release.Name }}'
     spec:
       affinity:
@@ -50,7 +50,7 @@ spec:
         {{ end }}
         envFrom:
         - configMapRef:
-            name: aks-clientid-syncer-webhook-config
+            name: azure-clientid-syncer-webhook-config
         image: '{{ .Values.image.repository }}:{{ .Values.image.release }}'
         imagePullPolicy: '{{ .Values.image.pullPolicy }}'
         livenessProbe:
@@ -97,11 +97,11 @@ spec:
       nodeSelector:
         {{- toYaml .Values.nodeSelector | nindent 8 }}
       priorityClassName: {{ .Values.priorityClassName }}
-      serviceAccountName: aks-clientid-syncer-webhook-admin
+      serviceAccountName: azure-clientid-syncer-webhook-admin
       tolerations:
         {{- toYaml .Values.tolerations | nindent 8 }}
       volumes:
       - name: cert
         secret:
           defaultMode: 420
-          secretName: aks-clientid-syncer-webhook-server-cert
+          secretName: azure-clientid-syncer-webhook-server-cert

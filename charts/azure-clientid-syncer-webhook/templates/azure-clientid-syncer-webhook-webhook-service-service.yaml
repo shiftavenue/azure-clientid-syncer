@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: '{{ template "azure-clientid-syncer-webhook.name" . }}'
+    azure-clientid-syncer-webhook.io/system: "true"
+    chart: '{{ template "azure-clientid-syncer-webhook.name" . }}'
+    release: '{{ .Release.Name }}'
+  name: azure-clientid-syncer-webhook-webhook-service
+  namespace: '{{ .Release.Namespace }}'
+spec:
+  {{- if .Values.service }}
+  type: {{  .Values.service.type | default "ClusterIP" }}
+  {{- end }}
+  ports:
+  - port: 443
+    targetPort: 9443
+  selector:
+    app: '{{ template "azure-clientid-syncer-webhook.name" . }}'
+    azure-clientid-syncer-webhook.io/system: "true"
+    chart: '{{ template "azure-clientid-syncer-webhook.name" . }}'
+    release: '{{ .Release.Name }}'

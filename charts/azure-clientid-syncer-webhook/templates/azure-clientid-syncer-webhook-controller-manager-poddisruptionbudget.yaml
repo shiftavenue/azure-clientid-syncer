@@ -2,11 +2,11 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   labels:
-    app: '{{ template "aks-clientid-syncer-webhook.name" . }}'
-    aks-clientid-syncer-webhook.io/system: "true"
-    chart: '{{ template "aks-clientid-syncer-webhook.name" . }}'
+    app: '{{ template "azure-clientid-syncer-webhook.name" . }}'
+    azure-clientid-syncer-webhook.io/system: "true"
+    chart: '{{ template "azure-clientid-syncer-webhook.name" . }}'
     release: '{{ .Release.Name }}'
-  name: aks-clientid-syncer-webhook-controller-manager
+  name: azure-clientid-syncer-webhook-controller-manager
   namespace: '{{ .Release.Namespace }}'
 spec:
   {{- if .Values.podDisruptionBudget.maxUnavailable }}
@@ -17,7 +17,7 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-      app: '{{ template "aks-clientid-syncer-webhook.name" . }}'
-      aks-clientid-syncer-webhook.io/system: "true"
-      chart: '{{ template "aks-clientid-syncer-webhook.name" . }}'
+      app: '{{ template "azure-clientid-syncer-webhook.name" . }}'
+      azure-clientid-syncer-webhook.io/system: "true"
+      chart: '{{ template "azure-clientid-syncer-webhook.name" . }}'
       release: '{{ .Release.Name }}'
