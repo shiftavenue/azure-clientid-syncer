@@ -51,7 +51,7 @@ spec:
         envFrom:
         - configMapRef:
             name: azure-clientid-syncer-webhook-config
-        image: '{{ .Values.image.repository }}:{{ .Values.image.release }}'
+        image: '{{ .Values.image.repository }}:{{ .Values.image.release | default .Chart.AppVersion | quote }}'
         imagePullPolicy: '{{ .Values.image.pullPolicy }}'
         livenessProbe:
           failureThreshold: 6
