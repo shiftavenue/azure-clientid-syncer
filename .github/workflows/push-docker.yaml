@@ -1,16 +1,15 @@
 name: Deploy Images to GHCR
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
+  workflow_run:
+    workflows: [Init Release]
+    types:
+      - completed
 
 jobs:
   push-image:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: "./azure-clientid-syncer"
     steps:
       - name: "Checkout GitHub Action"
         uses: actions/checkout@main
