@@ -4,15 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"sync"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/msi/armmsi"
+	arg "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resourcegraph/armresourcegraph"
 	"github.com/go-logr/logr"
+	"github.com/shiftavenue/azure-clientid-syncer/pkg/config"
 )
 
 type FederatedIdentityCredentialQueryParams struct {
@@ -26,9 +32,10 @@ type AzureFinder struct {
 	Logger         logr.Logger
 	cred           *azidentity.DefaultAzureCredential
 	queryParameter FederatedIdentityCredentialQueryParams
+	config         config.Config
 }
 
-func NewAzureFinder(oidcIssuerUrl string, logger logr.Logger, queryParameter FederatedIdentityCredentialQueryParams) (*AzureFinder, error) {
+func NewAzureFinder(oidcIssuerUrl string, logger logr.Logger, queryParameter FederatedIdentityCredentialQueryParams, config config.Config) (*AzureFinder, error) {
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		logger.Error(err, "failed to obtain a credential")
@@ -39,51 +46,38 @@ func NewAzureFinder(oidcIssuerUrl string, logger logr.Logger, queryParameter Fed
 		Logger:         logger,
 		cred:           cred,
 		queryParameter: queryParameter,
+		config:         config,
 	}, nil
 }
 
 func (azureFinder *AzureFinder) GetclientidForServiceAccount() (string, error) {
-	err := azureFinder.updateSubscriptionList()
+	clientId, err := azureFinder.searchForClientIdInSubscriptions()
+
 	if err != nil {
-		azureFinder.Logger.Error(err, "failed to update subscription list")
+		azureFinder.Logger.Error(err, "failed to find client id in subscriptions")
+		return "", err
+	}
+
+	return clientId, nil
+}
+
+func (azureFinder AzureFinder) searchForClientIdInSubscriptions() (string, error) {
+	identities, err := azureFinder.getUamis(azureFinder.cred)
+	if err != nil {
+		azureFinder.Logger.Error(err, "failed to get uamis")
 		return "", err
 	}
 
 	ch := make(chan string, 1)
 	wg := sync.WaitGroup{}
-	wg.Add(len(azureFinder.Subscriptions.Value))
-
-	for _, sub := range azureFinder.Subscriptions.Value {
-		go azureFinder.searchForClientIdInSubscription(strings.Split(sub.ID, "/")[2], ch, &wg)
-	}
-
-	go func() {
-		wg.Wait()
-		close(ch)
-	}()
-
-	v, ok := <-ch
-
-	if !ok {
-		return "", errors.New("failed to find clientId")
-	}
-
-	return v, nil
-}
-
-func (azureFinder AzureFinder) searchForClientIdInSubscription(subscriptionId string, ch chan string, externalWG *sync.WaitGroup) {
-	clientFactory, err := armmsi.NewClientFactory(subscriptionId, azureFinder.cred, nil)
-	if err != nil {
-		azureFinder.Logger.Error(err, "failed to create client")
-	}
-
-	identities := azureFinder.getUamis(clientFactory)
-
-	wg := sync.WaitGroup{}
 	wg.Add(len(identities))
 
 	for _, identity := range identities {
 		go func(ch chan string, identity *armmsi.Identity) {
+			clientFactory, err := armmsi.NewClientFactory(strings.Split(*identity.ID, "/")[2], azureFinder.cred, nil)
+			if err != nil {
+				azureFinder.Logger.Error(err, "failed to create federated identity query client")
+			}
 			azureFinder.Logger.Info("Checking identity", "clientId", *identity.Properties.ClientID)
 			resourceGroup := strings.Split(*identity.ID, "/")[4]
 			resourceName := strings.Split(*identity.ID, "/")[8]
@@ -99,8 +93,16 @@ func (azureFinder AzureFinder) searchForClientIdInSubscription(subscriptionId st
 
 	go func() {
 		wg.Wait()
-		externalWG.Done()
+		close(ch)
 	}()
+
+	v, ok := <-ch
+
+	if !ok {
+		return "", errors.New("failed to find clientId")
+	}
+
+	return v, nil
 }
 
 // uses the resourceGroup and resourceName to return a pointer to a slice of FederatedIdentityCredentials
@@ -175,18 +177,67 @@ func (azureFinder *AzureFinder) updateSubscriptionList() error {
 	return nil
 }
 
-func (azureFinder *AzureFinder) getUamis(clientFactory *armmsi.ClientFactory) []*armmsi.Identity {
-	UserAssignedIdentitiesListResult := []*armmsi.Identity{}
-
-	ctx := context.Background()
-	pager := clientFactory.NewUserAssignedIdentitiesClient().NewListBySubscriptionPager(nil)
-	for pager.More() {
-		page, err := pager.NextPage(ctx)
-		if err != nil {
-			azureFinder.Logger.Error(err, "failed to advance page")
-		}
-		UserAssignedIdentitiesListResult = append(UserAssignedIdentitiesListResult, page.Value...)
+func (azureFinder *AzureFinder) getUamis(cred *azidentity.DefaultAzureCredential) ([]*armmsi.Identity, error) {
+	err := azureFinder.updateSubscriptionList()
+	if err != nil {
+		azureFinder.Logger.Error(err, "failed to update subscription list")
+		return nil, err
 	}
 
-	return UserAssignedIdentitiesListResult
+	argClient, err := arg.NewClient(azcore.TokenCredential(cred), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx := context.Background()
+
+	var subscriptionIdList []*string
+
+	for _, sub := range azureFinder.Subscriptions.Value {
+		subscriptionIdList = append(subscriptionIdList, to.Ptr(strings.Split(sub.ID, "/")[2]))
+	}
+
+	query := "resources | where type == \"microsoft.managedidentity/userassignedidentities\""
+
+	if azureFinder.config.FilterTags != nil {
+		for tagKey, tagValue := range azureFinder.config.FilterTags {
+			query += fmt.Sprintf(" | where tags['%s'] == '%s'", tagKey, tagValue)
+		}
+	}
+
+	var skipToken *string = nil
+	var initQuery bool = true
+	var identities []*armmsi.Identity
+
+	for skipToken != nil || initQuery {
+		initQuery = false
+		res, err := argClient.Resources(ctx, arg.QueryRequest{
+			Query:         to.Ptr(query),
+			Subscriptions: subscriptionIdList,
+			Options: &arg.QueryRequestOptions{
+				SkipToken: skipToken,
+			},
+		}, nil)
+
+		if err != nil {
+			panic(err)
+		}
+
+		if skipToken != nil {
+			log.Printf("SkipToken:" + *res.SkipToken)
+		}
+
+		skipToken = res.SkipToken
+
+		json_result, err := json.Marshal(res.Data)
+		if err != nil {
+			panic(err)
+		}
+
+		if err := json.Unmarshal(json_result, &identities); err != nil {
+			log.Fatalf("Failed to unmarshal result: %v", err)
+		}
+	}
+
+	return identities, nil
 }

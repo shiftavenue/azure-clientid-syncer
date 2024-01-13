@@ -11,6 +11,8 @@ type Config struct {
 	TenantID                string `envconfig:"AZURE_TENANT_ID"`
 	AutoDetectOidcIssuerUrl bool   `envconfig:"AUTO_DETECT_OIDC_ISSUER_URL"`
 	OidcIssuerUrl           string `envconfig:"OIDC_ISSUER_URL"`
+	// add filter tags here via 'export FILTER_TAGS="aks-clientid-syncer:true"'
+	FilterTags map[string]string `envconfig:"FILTER_TAGS"`
 }
 
 // ParseConfig parses the configuration from env variables
