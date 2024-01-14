@@ -14,13 +14,16 @@ helm repo update
 helm install clientid-syncer-webhook azure-clientid-syncer/azure-clientid-syncer-webhook \
    --namespace azure-clientid-syncer-system \
    --create-namespace \
-   --set azureTenantID="${AZURE_TENANT_ID}"
+   --set config.azureTenantID="${AZURE_TENANT_ID}"
 ```
 
 ## Getting started 
-
 1. Create a managed identity with an federated identity credential to use azure-client-syncer with Workload Identity - configure the credential according to your environment. The following are the default values for the Service Account deployed with the chart:
 * Namespace: azure-clientid-syncer-system
 * Name: azure-clientid-syncer-webhook-admin
-2. Install the helm chart with the values according to your managed identity and tenant. (An example can be found [here](example/example-values.yaml))
-3. Start deploying...
+2. Assign Reader permissions to your managed identity:
+3. Install the helm chart with the values according to your managed identity and tenant. (An example can be found [here](example/example-values.yaml))
+4. Start deploying...
+
+## Performance considerations
+The webhook is called every time a service account is created. This can lead to a lot of calls to the Azure API required to check the federated identity credentials. To reduce the number of calls, the webhook allows to set a **FILTER_TAGS** environment variable and you should follow the principal of priviledge when assigning Reader permissions to the identity. This variable contains a comma separated list of tags which will be used as additional parameter for the query of the Azure managed identities. Kubernetes mutation webhooks have a max. timeout of 30 seconds. To achieve this time it is recommended to build a query which returns at **maximum around ~70 managed identities**.

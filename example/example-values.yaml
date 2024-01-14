@@ -1,5 +1,9 @@
-azureTenantID: "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
-filterTags: "aks-clientid-syncer:true,namespace:<NAMESPACE>,serviceaccountname:<SERVICE_ACCOUNT_NAME>"
+config:
+  azureTenantID: "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+  filterTags: "aks-clientid-syncer:true,namespace:<NAMESPACE>,serviceaccountname:<SERVICE_ACCOUNT_NAME>"
+
+webhook:
+  timeoutSeconds: 10
 
 podLabels:
   azure.workload.identity/use: "true"
