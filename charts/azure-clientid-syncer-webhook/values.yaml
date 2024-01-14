@@ -26,11 +26,14 @@ service:
   targetPort: 9443
 azureEnvironment: AzurePublicCloud
 # enter your tenant ID here. If you leave this empty, the webhook will try to auto-detect the tenant ID.
-azureTenantID: ""
-autoDetectOidcIssuerUrl: "true"
-oidcIssuerUrl: ""
-tagsFilter: ""
-clusterIdentifier: ""
+config:
+  azureTenantID: ""
+  autoDetectOidcIssuerUrl: "true"
+  oidcIssuerUrl: ""
+  filterTags: ""
+  clusterIdentifier: ""
+webhook:
+  timeoutSeconds: 15
 metricsAddr: ":8095"
 metricsBackend: prometheus
 logLevel: 0

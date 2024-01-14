@@ -2,7 +2,7 @@
     1. Deploy new AKS cluster with OIDC and Workload Identity enabled:
     ```bash
     az aks create --resource-group <resource-group> --name <cluster-name> --node-count 1 --enable-oidc-issuer --enable-workload-identity
-    ISSUER=$(az aks show --resource-group test-group --name awdawd --query "oidcIssuerProfile.issuerUrl" -otsv)
+    ISSUER=$(az aks show --resource-group <resource-group> --name <cluster-name> --query "oidcIssuerProfile.issuerUrl" -otsv)
     ```
     2. Update existing AKS cluster with OIDC and Workload Identity enabled:
     ```bash
@@ -22,3 +22,4 @@
     ```bash
     az role assignment create --role Reader --assignee <identity-client-id> --scope subscriptions/<subscription-id>
     ```
+4. Install the helm chart with the values according to your managed identity and tenant. (An example can be found [here](example-values.yaml))
