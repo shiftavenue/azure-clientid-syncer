@@ -48,10 +48,18 @@ spec:
         - name: OIDC_ISSUER_URL
           value: '{{ .Values.oidcIssuerUrl }}'
         {{ end }}
+        {{ if .Values.filterTags }}
+        - name: FILTER_TAGS
+          value: '{{ .Values.filterTags }}'
+        {{ end }}
+        {{ if .Values.clusterIdentifier }}
+        - name: CLUSTER_IDENTIFIER
+          value: '{{ .Values.clusterIdentifier }}'
+        {{ end }}
         envFrom:
         - configMapRef:
             name: azure-clientid-syncer-webhook-config
-        image: '{{ .Values.image.repository }}:{{ .Values.image.release | default .Chart.AppVersion | quote }}'
+        image: '{{ .Values.image.repository }}:{{ .Values.image.release | default .Chart.AppVersion }}'
         imagePullPolicy: '{{ .Values.image.pullPolicy }}'
         livenessProbe:
           failureThreshold: 6

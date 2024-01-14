@@ -7,17 +7,17 @@ image:
   repository: ghcr.io/shiftavenue/azure-clientid-syncer
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  # release: 0.0.19
+  # release: 0.0.37
 imagePullSecrets: []
 nodeSelector:
   kubernetes.io/os: linux
 resources:
   limits:
-    cpu: 100m
-    memory: 30Mi
+    cpu: 500m
+    memory: 400Mi
   requests:
-    cpu: 100m
-    memory: 20Mi
+    cpu: 500m
+    memory: 300Mi
 tolerations: []
 affinity: {}
 service:
@@ -29,6 +29,8 @@ azureEnvironment: AzurePublicCloud
 azureTenantID: ""
 autoDetectOidcIssuerUrl: "true"
 oidcIssuerUrl: ""
+tagsFilter: ""
+clusterIdentifier: ""
 metricsAddr: ":8095"
 metricsBackend: prometheus
 logLevel: 0

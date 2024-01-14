@@ -54,73 +54,106 @@ func (azureFinder *AzureFinder) GetclientidForServiceAccount() (string, error) {
 	clientId, err := azureFinder.searchForClientIdInSubscriptions()
 
 	if err != nil {
-		azureFinder.Logger.Error(err, "failed to find client id in subscriptions")
 		return "", err
+	} else if clientId == nil {
+		return "", errors.New("failed to find client id in subscriptions")
 	}
 
-	return clientId, nil
+	return *clientId, nil
 }
 
-func (azureFinder AzureFinder) searchForClientIdInSubscriptions() (string, error) {
+func (azureFinder AzureFinder) searchForClientIdInSubscriptions() (*string, error) {
 	identities, err := azureFinder.getUamis(azureFinder.cred)
 	if err != nil {
-		azureFinder.Logger.Error(err, "failed to get uamis")
-		return "", err
+		return nil, err
 	}
 
-	ch := make(chan string, 1)
+	ch := make(chan *string, 1)
+	ctx, cancel := context.WithCancel(context.Background())
+
+	var clientFactories = map[string]*armmsi.ClientFactory{}
+
+	for _, subscription := range azureFinder.Subscriptions.Value {
+		shortenedSubscriptionId := strings.Split(subscription.ID, "/")[2]
+		clientFactory, err := armmsi.NewClientFactory(shortenedSubscriptionId, azureFinder.cred, nil)
+		if err != nil {
+			azureFinder.Logger.Error(err, "failed to create federated identity query client")
+		}
+		clientFactories[shortenedSubscriptionId] = clientFactory
+	}
+
+	azureFinder.Logger.Info("Detected identities to check", "identitiesCount", len(identities))
+
 	wg := sync.WaitGroup{}
 	wg.Add(len(identities))
 
 	for _, identity := range identities {
-		go func(ch chan string, identity *armmsi.Identity) {
-			clientFactory, err := armmsi.NewClientFactory(strings.Split(*identity.ID, "/")[2], azureFinder.cred, nil)
-			if err != nil {
-				azureFinder.Logger.Error(err, "failed to create federated identity query client")
-			}
+		go func(ch chan *string, identity *armmsi.Identity, ctx context.Context) {
+
 			azureFinder.Logger.Info("Checking identity", "clientId", *identity.Properties.ClientID)
 			resourceGroup := strings.Split(*identity.ID, "/")[4]
 			resourceName := strings.Split(*identity.ID, "/")[8]
-			for _, i := range azureFinder.getFederatedIdentityCredentialsForUami(resourceGroup, resourceName, clientFactory) {
+
+			federatedIdentityCredentials, err := azureFinder.getFederatedIdentityCredentialsForUami(resourceGroup, resourceName, clientFactories[strings.Split(*identity.ID, "/")[2]], ctx)
+			if err != nil || federatedIdentityCredentials == nil {
+				return
+			}
+			for _, i := range *federatedIdentityCredentials {
 				if *i.Properties.Issuer == azureFinder.OidcIssuerUrl && *i.Properties.Subject == "system:serviceaccount:"+azureFinder.queryParameter.Namespace+":"+azureFinder.queryParameter.ServiceAccountName {
-					ch <- *identity.Properties.ClientID
+					azureFinder.Logger.Info("Found matching federated identity", "clientId", *identity.Properties.ClientID)
+					ch <- identity.Properties.ClientID
 				}
 			}
 			azureFinder.Logger.Info("Done checking identity: ", "clientId", *identity.Properties.ClientID)
 			wg.Done()
-		}(ch, identity)
+		}(ch, identity, ctx)
 	}
 
-	go func() {
+	go func(ctx context.Context) {
 		wg.Wait()
-		close(ch)
-	}()
+		if ctx.Err() != nil {
+			return
+		}
+		ch <- nil
+	}(ctx)
 
 	v, ok := <-ch
+	cancel()
+	close(ch)
 
-	if !ok {
-		return "", errors.New("failed to find clientId")
+	if !ok || v == nil {
+		return nil, nil
 	}
 
 	return v, nil
 }
 
 // uses the resourceGroup and resourceName to return a pointer to a slice of FederatedIdentityCredentials
-func (azureFinder *AzureFinder) getFederatedIdentityCredentialsForUami(resourceGroup string, resourceName string, clientFactory *armmsi.ClientFactory) []*armmsi.FederatedIdentityCredential {
+func (azureFinder *AzureFinder) getFederatedIdentityCredentialsForUami(resourceGroup string, resourceName string, clientFactory *armmsi.ClientFactory, ctxOuter context.Context) (*[]*armmsi.FederatedIdentityCredential, error) {
 	federatedIdentityCredentials := []*armmsi.FederatedIdentityCredential{}
 
 	ctx := context.Background()
-	pager := clientFactory.NewFederatedIdentityCredentialsClient().NewListPager(resourceGroup, resourceName, &armmsi.FederatedIdentityCredentialsClientListOptions{Top: nil,
-		Skiptoken: nil,
-	})
+	azureFinder.Logger.Info("Getting federated identity credentials for uami", "resourceGroup", resourceGroup, "resourceName", resourceName)
+
+	pager := clientFactory.NewFederatedIdentityCredentialsClient().NewListPager(resourceGroup, resourceName, nil)
+
 	for pager.More() {
 		page, err := pager.NextPage(ctx)
-		if err != nil {
-			azureFinder.Logger.Error(err, "failed to advance page")
+		switch {
+		case len(page.Value) == 0:
+			azureFinder.Logger.Info("No federated identity credentials found for uami", "resourceGroup", resourceGroup, "resourceName", resourceName)
+			return nil, nil
+		case err != nil && len(federatedIdentityCredentials) == 0:
+			azureFinder.Logger.Error(err, "failed to advance page and currently have no federated identity credentials")
+			return nil, err
+		case err != nil:
+			azureFinder.Logger.Error(err, "failed to advance page but have some federated identity credentials")
+			return &federatedIdentityCredentials, nil
 		}
 		federatedIdentityCredentials = append(federatedIdentityCredentials, page.Value...)
 	}
-	return federatedIdentityCredentials
+
+	return &federatedIdentityCredentials, nil
 }
 
 type Subscription struct {
@@ -201,9 +234,19 @@ func (azureFinder *AzureFinder) getUamis(cred *azidentity.DefaultAzureCredential
 
 	if azureFinder.config.FilterTags != nil {
 		for tagKey, tagValue := range azureFinder.config.FilterTags {
+			if tagValue == "<SERVICE_ACCOUNT_NAME>" {
+				tagValue = azureFinder.queryParameter.ServiceAccountName
+			} else if tagValue == "<NAMESPACE>" {
+				tagValue = azureFinder.queryParameter.Namespace
+			}
+			if azureFinder.config.ClusterIdentifier != "" {
+				tagKey = azureFinder.config.ClusterIdentifier + "-" + tagKey
+			}
 			query += fmt.Sprintf(" | where tags['%s'] == '%s'", tagKey, tagValue)
 		}
 	}
+
+	azureFinder.Logger.Info("Querying for identities", "query", query)
 
 	var skipToken *string = nil
 	var initQuery bool = true

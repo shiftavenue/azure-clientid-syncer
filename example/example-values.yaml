@@ -1,4 +1,5 @@
 azureTenantID: "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+filterTags: "aks-clientid-syncer:true,namespace:<NAMESPACE>,serviceaccountname:<SERVICE_ACCOUNT_NAME>"
 
 podLabels:
   azure.workload.identity/use: "true"
