@@ -94,7 +94,7 @@ func (m *serviceAccountMutator) Handle(ctx context.Context, req admission.Reques
 	azFinder, err := az.NewAzureFinder(config.OidcIssuerUrl, m.logger, az.FederatedIdentityCredentialQueryParams{
 		Namespace:          serviceAccountNamespace,
 		ServiceAccountName: serviceAccountName,
-	})
+	}, *config)
 	if err != nil {
 		m.logger.Error(err, "failed to create AzureFinder")
 		return admission.Errored(http.StatusInternalServerError, err)

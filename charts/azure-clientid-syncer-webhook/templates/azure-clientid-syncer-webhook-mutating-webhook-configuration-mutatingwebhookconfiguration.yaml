@@ -21,6 +21,7 @@ webhooks:
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: mutation.azure-clientid-syncer-webhook.io
+  timeoutSeconds: 30
   namespaceSelector: {{- toYaml .Values.mutatingWebhookNamespaceSelector | nindent 4 }}
   objectSelector:
     matchLabels:

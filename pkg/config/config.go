@@ -11,6 +11,11 @@ type Config struct {
 	TenantID                string `envconfig:"AZURE_TENANT_ID"`
 	AutoDetectOidcIssuerUrl bool   `envconfig:"AUTO_DETECT_OIDC_ISSUER_URL"`
 	OidcIssuerUrl           string `envconfig:"OIDC_ISSUER_URL"`
+	// add filter tags here via 'export FILTER_TAGS="aks-clientid-syncer:true"'. 
+	// There are also two special tags: <NAMESPACE> and <SERVICE_ACCOUNT_NAME> which will be replaced with the actual values of the mutation request during runtime.
+	FilterTags map[string]string `envconfig:"FILTER_TAGS"`
+	// acts as a prefix for the tags in the azure portal allowing multi tenancy
+	ClusterIdentifier string `envconfig:"CLUSTER_IDENTIFIER"`
 }
 
 // ParseConfig parses the configuration from env variables
