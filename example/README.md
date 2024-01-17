@@ -34,7 +34,8 @@
     ```bash
     az aks get-credentials --resource-group $RG --name $CLUSTER
     ```
-5. (Optional) Create demo resources:
+5. Install the helm chart with the values according to your managed identity and tenant. (An example can be found [here](example-values.yaml) and the general instraction are [here](../README.md#installation))
+6. (Optional) Create demo resources and test the setup:
     ```bash
     KV_NAME=test-kv-azure-clientid
     KV_ID=$(az keyvault create --resource-group $RG --location $LOCATION --name $KV_NAME --enable-rbac-authorization true --query id -otsv)
@@ -50,10 +51,6 @@
                                         --issuer $ISSUER \
                                         --subject system:serviceaccount:default:testsa
     az role assignment create --role "Key Vault Secrets User"  --assignee $TEST_IDENTITY_CLIENT_ID --scope "$KV_ID"
-    ```
-5. Install the helm chart with the values according to your managed identity and tenant. (An example can be found [here](example-values.yaml) and the general instraction are [here](../README.md#installation))
-6. Test it:
-    ```bash
     cat <<EOF | kubectl apply -f -
     apiVersion: v1
     kind: ServiceAccount
