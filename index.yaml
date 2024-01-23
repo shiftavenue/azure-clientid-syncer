@@ -15,6 +15,19 @@ entries:
     - https://github.com/shiftavenue/azure-clientid-syncer/releases/download/azure-clientid-syncer-webhook-0.0.33/azure-clientid-syncer-webhook-0.0.33.tgz
     version: 0.0.33
   - apiVersion: v2
+    appVersion: 0.0.37
+    created: "2024-01-23T10:25:12.991648383Z"
+    description: A Helm chart to install the azure-clientid-syncer webhook
+    digest: 7d975e2c7e827b3b0f06af4db4840af3a4c336dc24915ae37fae5d448f98cfb3
+    home: https://github.com/shiftavenue/azure-clientid-syncer
+    name: azure-clientid-syncer-webhook
+    sources:
+    - https://github.com/shiftavenue/azure-clientid-syncer
+    type: application
+    urls:
+    - https://github.com/shiftavenue/azure-clientid-syncer/releases/download/azure-clientid-syncer-webhook-0.0.4/azure-clientid-syncer-webhook-0.0.4.tgz
+    version: 0.0.4
+  - apiVersion: v2
     appVersion: zure-clientid-syncer-webhook-0.0.2
     created: "2024-01-14T01:54:46.328761774Z"
     description: A Helm chart to install the azure-clientid-syncer webhook
@@ -40,4 +53,4 @@ entries:
     urls:
     - https://github.com/shiftavenue/azure-clientid-syncer/releases/download/azure-clientid-syncer-webhook-0.0.2/azure-clientid-syncer-webhook-0.0.2.tgz
     version: 0.0.2
-generated: "2024-01-14T01:54:46.328772474Z"
+generated: "2024-01-23T10:25:12.991668801Z"
