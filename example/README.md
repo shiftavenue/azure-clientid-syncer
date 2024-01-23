@@ -5,7 +5,7 @@
     CLUSTER=test-aks-azure-clientid-syncer
     LOCATION=westeurope
     az group create -l $LOCATION -n $RG
-    az aks create --resource-group $RG --name $CLUSTER --node-count 1 --enable-oidc-issuer --enable-workload-identity
+    az aks create --resource-group $RG --name $CLUSTER --node-count 1 --enable-oidc-issuer --enable-workload-identity --generate-ssh-keys
     ISSUER=$(az aks show --resource-group $RG --name $CLUSTER --query "oidcIssuerProfile.issuerUrl" -otsv)
     ```
     2. Update existing AKS cluster with OIDC and Workload Identity enabled:
@@ -37,7 +37,7 @@
 5. Install the helm chart with the values according to your managed identity and tenant. (An example can be found [here](example-values.yaml) and the general instraction are [here](../README.md#installation))
 6. (Optional) Create demo resources and test the setup:
     ```bash
-    KV_NAME=test-kv-azure-clientid
+    KV_NAME=<add-your-kv-name>
     KV_ID=$(az keyvault create --resource-group $RG --location $LOCATION --name $KV_NAME --enable-rbac-authorization true --query id -otsv)
     az role assignment create --role "Key Vault Secrets Officer"  --assignee $(az ad signed-in-user show --query id -otsv) --scope "$KV_ID"
     az keyvault secret set --vault-name "$KV_NAME" --name "test" --value 'Hello!'

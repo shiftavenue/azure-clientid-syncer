@@ -2,9 +2,10 @@
 This webhook syncs federated identity credentials from Azure for a Kubernetes cluster. Every time a Kubernetes service account with a specific label gets created it queries the Azure Managed Identities to fetch the client ID and tenant ID, and patches these values into this service account.
 
 ## Prerequirements
-- TenantID should be either exported or added manually during the installation, like:
-```export AZURE_TENANT_ID="$(az account show -s <AzureSubscriptionID> --query tenantId -otsv)"```
-- Make sure you followed the [Azure AD Workload Identity Instructions](https://azure.github.io/azure-workload-identity/docs/installation.html)
+* An existing Azure subscription
+* User with sufficient privileges to delegate the reader role on the required scope (where the managed identities for the Workload Identities are created in)
+* [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli), [helm](https://helm.sh/docs/intro/install/) and [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl)
+
 
 ## Installation
 > **_NOTE:_**  The following installation is not using extra values to configure Workload Identity or other Authentication mechanisms. Check the **Getting started** section for more information.
@@ -17,7 +18,8 @@ helm install clientid-syncer-webhook azure-clientid-syncer/azure-clientid-syncer
    --set config.azureTenantID="${AZURE_TENANT_ID}"
 ```
 
-## Getting started 
+## Getting started
+> **_NOTE:_**  To get a step-by-step guide check out the [example setup](example/README.md), which provides you a simple template of commands to set it up on your own.
 1. Create a managed identity with an federated identity credential to use azure-client-syncer with Workload Identity - configure the credential according to your environment. The following are the default values for the Service Account deployed with the chart:
 * Namespace: azure-clientid-syncer-system
 * Name: azure-clientid-syncer-webhook-admin
