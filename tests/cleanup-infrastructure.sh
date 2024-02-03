@@ -9,7 +9,9 @@ while getopts w: flag; do
   esac
 done
 
-source $(realpath $(dirname "$0"))/tests.env
+source $(realpath $(dirname "$0"))/../.env
+
+RG="azure-clientid-syncer-$RAND"
 
 if [ "$wait_on_delete" = "true" ]; then
   echo "waiting for azure rg $RG to be deleted ..."
@@ -21,4 +23,4 @@ else
   echo "cleaning up azure rg $RG in the background"
 fi
 
-rm $(realpath $(dirname "$0"))/tests.env
+rm $(realpath $(dirname "$0"))/../.env
