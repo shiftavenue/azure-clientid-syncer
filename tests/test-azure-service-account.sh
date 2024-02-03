@@ -2,7 +2,7 @@
 set -x
 
 # read output.json file and set variables
-source $(realpath $(dirname "$0"))/tests.env
+source $(realpath $(dirname "$0"))/../.env
 az aks get-credentials --resource-group $RG --name $CLUSTER
 
 TEST_IDENTITY_NAME=testsa
@@ -11,6 +11,11 @@ TEST_IDENTITY_CLIENT_ID="$(az identity create \
   --resource-group $RG \
   --name $TEST_IDENTITY_NAME \
   --query clientId -otsv)"
+
+TEST_IDENTITY_PRINCIPAL_ID="$(az identity show \
+  --resource-group $RG \
+  --name $TEST_IDENTITY_NAME \
+  --query principalId -otsv)"
 
 az identity federated-credential create \
   --identity-name $TEST_IDENTITY_NAME \
@@ -34,7 +39,8 @@ done
 
 az role assignment create \
   --role "Key Vault Secrets User" \
-  --assignee $TEST_IDENTITY_CLIENT_ID \
+  --assignee-principal-type ServicePrincipal \
+  --assignee-object-id $TEST_IDENTITY_PRINCIPAL_ID \
   --scope "$KV_ID"
 
 kubectl wait pod --all --for=condition=Ready --namespace=$NAMESPACE --timeout=60s

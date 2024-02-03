@@ -1,9 +1,17 @@
 #! /bin/bash -e
 set -x
 
-RAND=$(tr -dc a-z </dev/urandom | head -c 4 && echo)
+
+RAND=""
+# check if .env file exists and source it or create new rand
+if [ -f $(realpath $(dirname "$0"))/../.env ]; then
+  source $(realpath $(dirname "$0"))/../.env
+else
+  RAND=$(tr -dc a-z </dev/urandom | head -c 4 && echo)
+fi
 
 AZURE_CLIENT_ID_SYNCER_VERSION=$1
+OWN_IDENTITY_CLIENT_ID=$2
 RG="azure-clientid-syncer-$RAND"
 CLUSTER="aks-azure-clientid-syncer-$RAND"
 LOCATION="westeurope"
@@ -13,12 +21,25 @@ SUBSCRIPTION_ID=$(az account show --query id -otsv)
 TENANT_ID=$(az account show --query tenantId -otsv)
 SECRET_VALUE="Hello"
 
+OWN_IDENTITY_TYPE="ServicePrincipal"
+OWN_IDENTITY_OBJECT_ID=$(az ad sp show --id $OWN_IDENTITY_CLIENT_ID --query id -otsv)
+if [[ -z $OWN_IDENTITY_CLIENT_ID ]]; then
+  echo "OWN_IDENTITY_CLIENT_ID is not set. Using the signed-in user."
+  OWN_IDENTITY_TYPE="User"
+  OWN_IDENTITY_OBJECT_ID=$(az ad signed-in-user show --query id -otsv)
+fi
+
 az group create -l $LOCATION -n $RG
 
 IDENTITY_CLIENT_ID="$(az identity create \
   --resource-group $RG \
   --name $IDENTITY_NAME \
   --query clientId -otsv)"
+
+IDENTITY_PRINCIPAL_ID="$(az identity show \
+  --resource-group $RG \
+  --name $IDENTITY_NAME \
+  --query principalId -otsv)"
 
 az aks create \
   --resource-group $RG \
@@ -40,7 +61,8 @@ az identity federated-credential create \
 
 az role assignment create \
   --role Reader \
-  --assignee $IDENTITY_CLIENT_ID \
+  --assignee-object-id $IDENTITY_PRINCIPAL_ID \
+  --assignee-principal-type ServicePrincipal \
   --scope subscriptions/$SUBSCRIPTION_ID
 
 az aks get-credentials --resource-group $RG --name $CLUSTER
@@ -81,28 +103,29 @@ KV_ID="$(az keyvault create \
   --query id \
   -otsv)"
 
+az role assignment create \
+  --role "Key Vault Secrets Officer" \
+  --assignee-object-id $OWN_IDENTITY_OBJECT_ID \
+  --assignee-principal-type $OWN_IDENTITY_TYPE \
+  --scope "$KV_ID"
+
 az keyvault secret set \
   --vault-name "$KV_NAME" \
   --name "test" \
   --value "$SECRET_VALUE"
 
-az role assignment create \
-  --role "Key Vault Secrets Officer" \
-  --assignee $(az ad signed-in-user show --query id -otsv) \
-  --scope "$KV_ID"
-
 VAULT_URI="$(az keyvault show -g $RG --name $KV_NAME --query properties.vaultUri -otsv)"
 
-cat <<EOF >>$(realpath $(dirname "$0"))/tests.env
+cat <<EOF >>$(realpath $(dirname "$0"))/../.env
 VAULT_URI=$VAULT_URI
 KV_ID=$KV_ID
 SECRET_VALUE=$SECRET_VALUE
 TENANT_ID=$TENANT_ID
 NAMESPACE=$NAMESPACE
-RG=$RG
 CLUSTER=$CLUSTER
 RAND=$RAND
 ISSUER=$ISSUER
+RG=$RG
 EOF
 
 set +x
