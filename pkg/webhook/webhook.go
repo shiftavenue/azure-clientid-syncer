@@ -35,7 +35,7 @@ type serviceAccountMutator struct {
 	logger  logr.Logger
 }
 
-// NewServiceAccountMutator returns a pod mutation handler
+// NewServiceAccountMutator returns a service account mutation handler
 func NewServiceAccountMutator(client client.Client, reader client.Reader, scheme *runtime.Scheme, log logr.Logger) (admission.Handler, error) {
 	c, err := config.ParseConfig()
 	if err != nil {
@@ -55,7 +55,7 @@ func NewServiceAccountMutator(client client.Client, reader client.Reader, scheme
 	}, nil
 }
 
-// serviceAccountMutator adds projected service account volume for incoming pods if service account is annotated
+// serviceAccountMutator adds annotations to service account objects if the service account can be linked to an Azure identity
 func (m *serviceAccountMutator) Handle(ctx context.Context, req admission.Request) (response admission.Response) {
 	timeStart := time.Now()
 	m.logger.Info("received request to mutate service account")
