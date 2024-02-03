@@ -1,7 +1,6 @@
 #! /bin/bash -e
 set -x
 
-
 RAND=""
 # check if .env file exists and source it or create new rand
 if [ -f $(realpath $(dirname "$0"))/../.env ]; then
@@ -21,12 +20,13 @@ SUBSCRIPTION_ID=$(az account show --query id -otsv)
 TENANT_ID=$(az account show --query tenantId -otsv)
 SECRET_VALUE="Hello"
 
-OWN_IDENTITY_TYPE="ServicePrincipal"
-OWN_IDENTITY_OBJECT_ID=$(az ad sp show --id $OWN_IDENTITY_CLIENT_ID --query id -otsv)
 if [[ -z $OWN_IDENTITY_CLIENT_ID ]]; then
   echo "OWN_IDENTITY_CLIENT_ID is not set. Using the signed-in user."
   OWN_IDENTITY_TYPE="User"
   OWN_IDENTITY_OBJECT_ID=$(az ad signed-in-user show --query id -otsv)
+else
+  OWN_IDENTITY_TYPE="ServicePrincipal"
+  OWN_IDENTITY_OBJECT_ID=$(az ad sp show --id $OWN_IDENTITY_CLIENT_ID --query id -otsv)
 fi
 
 az group create -l $LOCATION -n $RG
