@@ -27,7 +27,7 @@ jobs:
             exit 1
           fi
 
-      - name: Create release 
+      - name: Create release v${{ inputs.TARGET_VERSION }}
         run: |
           gh release create v${{ inputs.TARGET_VERSION }} --generate-notes
         env:
@@ -42,12 +42,11 @@ jobs:
 
       - name: Set env
         run: |
-          release_version=${{ inputs.TARGET_VERSION }}
-          echo "RELEASE_VERSION=${release_version:1}" >> $GITHUB_ENV
+          echo "RELEASE_VERSION=${{ inputs.TARGET_VERSION }}" >> $GITHUB_ENV
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push
+      - name: Build and push to ghcr.io with tag latest and ${{ inputs.TARGET_VERSION }}
         uses: docker/build-push-action@v5
         with:
           push: true
