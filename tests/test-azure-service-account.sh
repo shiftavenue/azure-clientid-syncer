@@ -4,6 +4,7 @@ set -x
 # read output.json file and set variables
 source $(realpath $(dirname "$0"))/../.env
 az aks get-credentials --resource-group $RG --name $CLUSTER
+apt-get update && apt-get install -y jq
 
 TEST_IDENTITY_NAME=testsa
 
@@ -45,13 +46,13 @@ az role assignment create \
 
 kubectl wait pod --all --for=condition=Ready --namespace=$NAMESPACE --timeout=60s
 
-cat <<EOF | kubectl apply -f -
+kubectl apply -f - <<EOF
 apiVersion: v1
 kind: ServiceAccount
 metadata:
+  name: testsa
   labels:
     azure.clientid.syncer/use: "true"
-  name: testsa
 ---
 apiVersion: v1
 kind: Pod
@@ -66,7 +67,7 @@ spec:
     name: oidc
     env:
     - name: KEYVAULT_URL
-      value: $VAULT_URI
+      value: "$VAULT_URI"
     - name: SECRET_NAME
       value: test
   nodeSelector:

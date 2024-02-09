@@ -8,9 +8,9 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"github.com/shiftavenue/azure-clientid-syncer/pkg/az"
 	"github.com/shiftavenue/azure-clientid-syncer/pkg/config"
 	"github.com/shiftavenue/azure-clientid-syncer/pkg/kuberneteshelper"
+	"github.com/shiftavenue/azure-clientid-syncer/pkg/provider"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -47,10 +47,10 @@ func NewServiceAccountMutator(client client.Client, reader client.Reader, scheme
 	}
 
 	return &serviceAccountMutator{
-		client: client,
-		reader: reader,
-		config: c,
-		logger: log,
+		client:  client,
+		reader:  reader,
+		config:  c,
+		logger:  log,
 		decoder: admission.NewDecoder(scheme),
 	}, nil
 }
@@ -69,61 +69,43 @@ func (m *serviceAccountMutator) Handle(ctx context.Context, req admission.Reques
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 
-	serviceAccountName := serviceAccount.Name
-	serviceAccountNamespace := serviceAccount.Namespace
-
-	m.logger.Info("identified service account with name: " + serviceAccountName + " and namespace: " + serviceAccountNamespace)
-
 	config, err := config.ParseConfig()
 	if err != nil {
-		panic(err)
+		m.logger.Error(err, "failed to parse config")
+		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
 	if config.AutoDetectOidcIssuerUrl {
 		kuberneteshelper, err := kuberneteshelper.NewKubernetesHelper(m.logger)
 		if err != nil {
-			panic(err)
+			m.logger.Error(err, "failed to create KubernetesHelper")
+			return admission.Errored(http.StatusInternalServerError, err)
 		}
 		config.OidcIssuerUrl, err = kuberneteshelper.GetOidcIssuerUrl()
 		if err != nil {
-			panic(err)
+			m.logger.Error(err, "failed to get OIDC issuer URL")
+			return admission.Errored(http.StatusInternalServerError, err)
 		}
 		m.logger.Info("detected OIDC issuer URL: " + config.OidcIssuerUrl)
 	}
 
-	azFinder, err := az.NewAzureFinder(config.OidcIssuerUrl, m.logger, az.FederatedIdentityCredentialQueryParams{
-		Namespace:          serviceAccountNamespace,
-		ServiceAccountName: serviceAccountName,
-	}, *config)
+	providerType := "azure"
+	queryProvider, err := provider.NewQueryProvider(providerType, m.logger, *config)
 	if err != nil {
-		m.logger.Error(err, "failed to create AzureFinder")
+		m.logger.Error(err, "failed to create query provider")
+		return admission.Errored(http.StatusInternalServerError, err)
+	}
+	
+	annotatedServiceAccount, err := queryProvider.Query(*serviceAccount)
+	if err != nil {
+		m.logger.Error(err, "failed to query service account")
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
-	clientid, err := azFinder.GetclientidForServiceAccount()
-
-	if err == nil {
-		m.logger.Info("Setting new annotations for service account", "name", serviceAccountName, "namespace", serviceAccountNamespace, clientidAnnotation, clientid, TenantIDAnnotation, config.TenantID)
-		if serviceAccount.Annotations == nil {
-			serviceAccount.Annotations = make(map[string]string)
-		}
-		serviceAccount.Annotations[clientidAnnotation] = clientid
-		serviceAccount.Annotations[TenantIDAnnotation] = config.TenantID
-	} else {
-		m.logger.Info("Failed to find clientid for service account. No changes will be patched.", "name", serviceAccountName, "namespace", serviceAccountNamespace,)
-	}
-
-	marshaledServiceAccount, err := json.Marshal(serviceAccount)
+	marshaledServiceAccount, err := json.Marshal(annotatedServiceAccount)
 	if err != nil {
 		m.logger.Error(err, "failed to marshal service account")
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 	return admission.PatchResponseFromRaw(req.Object.Raw, marshaledServiceAccount)
 }
-
-const (
-	// clientidAnnotation represents the clientid to be used with pod
-	clientidAnnotation = "azure.workload.identity/client-id"
-	// TenantIDAnnotation represent the tenantID to be used with pod
-	TenantIDAnnotation = "azure.workload.identity/tenant-id"
-)

@@ -1,7 +1,6 @@
 #! /bin/bash -e
 set -x
 
-
 RAND=""
 # check if .env file exists and source it or create new rand
 if [ -f $(realpath $(dirname "$0"))/../.env ]; then
@@ -83,7 +82,7 @@ if [ ! -z "$AZURE_CLIENT_ID_SYNCER_VERSION" ]; then
   echo "AZURE_CLIENT_ID_SYNCER_VERSION is set to $AZURE_CLIENT_ID_SYNCER_VERSION. Overriding the default version in the chart."
   cat <<EOF >>values.yaml
 image:
-  release: $AZURE_CLIENT_ID_SYNCER_VERSION
+  release: "$AZURE_CLIENT_ID_SYNCER_VERSION"
 EOF
 fi
 
