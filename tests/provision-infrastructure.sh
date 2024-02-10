@@ -20,15 +20,33 @@ SUBSCRIPTION_ID=$(az account show --query id -otsv)
 TENANT_ID=$(az account show --query tenantId -otsv)
 SECRET_VALUE="Hello"
 
-OWN_IDENTITY_TYPE="ServicePrincipal"
-OWN_IDENTITY_OBJECT_ID=$(az ad sp show --id $OWN_IDENTITY_CLIENT_ID --query id -otsv)
+
 if [[ -z $OWN_IDENTITY_CLIENT_ID ]]; then
   echo "OWN_IDENTITY_CLIENT_ID is not set. Using the signed-in user."
   OWN_IDENTITY_TYPE="User"
   OWN_IDENTITY_OBJECT_ID=$(az ad signed-in-user show --query id -otsv)
+else
+  OWN_IDENTITY_TYPE="ServicePrincipal"
+  OWN_IDENTITY_OBJECT_ID=$(az ad sp show --id $OWN_IDENTITY_CLIENT_ID --query id -otsv)
 fi
 
 az group create -l $LOCATION -n $RG
+
+az aks create \
+  --resource-group $RG \
+  --name $CLUSTER \
+  --node-count 1 \
+  --enable-oidc-issuer \
+  --enable-workload-identity \
+  --generate-ssh-keys \
+  --no-wait
+
+az keyvault create \
+  --resource-group $RG \
+  --location $LOCATION \
+  --name $KV_NAME \
+  --enable-rbac-authorization true \
+  --no-wait
 
 IDENTITY_CLIENT_ID="$(az identity create \
   --resource-group $RG \
@@ -40,13 +58,20 @@ IDENTITY_PRINCIPAL_ID="$(az identity show \
   --name $IDENTITY_NAME \
   --query principalId -otsv)"
 
-az aks create \
-  --resource-group $RG \
-  --name $CLUSTER \
-  --node-count 1 \
-  --enable-oidc-issuer \
-  --enable-workload-identity \
-  --generate-ssh-keys
+az keyvault wait --resource-group $RG --name $KV_NAME --created
+
+KV_ID="$(az keyvault show \
+  --name $KV_NAME \
+  --query id \
+  -otsv)"
+
+az role assignment create \
+  --role "Key Vault Secrets Officer" \
+  --assignee-object-id $OWN_IDENTITY_OBJECT_ID \
+  --assignee-principal-type $OWN_IDENTITY_TYPE \
+  --scope "$KV_ID"
+
+az aks wait --resource-group $RG --name $CLUSTER --created
 
 ISSUER="$(az aks show --resource-group $RG --name $CLUSTER --query "oidcIssuerProfile.issuerUrl" -otsv)"
 
@@ -94,19 +119,7 @@ helm install clientid-syncer-webhook azure-clientid-syncer/azure-clientid-syncer
   -f values.yaml
 rm values.yaml
 
-KV_ID="$(az keyvault create \
-  --resource-group $RG \
-  --location $LOCATION \
-  --name $KV_NAME \
-  --enable-rbac-authorization true \
-  --query id \
-  -otsv)"
 
-az role assignment create \
-  --role "Key Vault Secrets Officer" \
-  --assignee-object-id $OWN_IDENTITY_OBJECT_ID \
-  --assignee-principal-type $OWN_IDENTITY_TYPE \
-  --scope "$KV_ID"
 
 az keyvault secret set \
   --vault-name "$KV_NAME" \

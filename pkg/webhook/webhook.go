@@ -89,14 +89,13 @@ func (m *serviceAccountMutator) Handle(ctx context.Context, req admission.Reques
 		m.logger.Info("detected OIDC issuer URL: " + config.OidcIssuerUrl)
 	}
 
-	providerType := "azure"
-	queryProvider, err := provider.NewQueryProvider(providerType, m.logger, *config)
+	queryProvider, err := provider.NewQueryProvider(serviceAccount, m.logger, *config)
 	if err != nil {
 		m.logger.Error(err, "failed to create query provider")
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 	
-	annotatedServiceAccount, err := queryProvider.Query(*serviceAccount)
+	annotatedServiceAccount, err := queryProvider.Query()
 	if err != nil {
 		m.logger.Error(err, "failed to query service account")
 		return admission.Errored(http.StatusInternalServerError, err)

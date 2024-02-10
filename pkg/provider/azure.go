@@ -26,10 +26,9 @@ type azureQueryProvider struct {
 	defaultQueryProvider
 	Subscriptions                SubscriptionList
 	cred                         *azidentity.DefaultAzureCredential
-	serviceAccountQueryParameter serviceAccountQueryParameter
 }
 
-func NewAzureQueryProvider(logger logr.Logger, config config.Config) (*azureQueryProvider, error) {
+func NewAzureQueryProvider(serviceAccount *corev1.ServiceAccount, logger logr.Logger, config config.Config) (*azureQueryProvider, error) {
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		logger.Error(err, "failed to obtain a credential")
@@ -44,34 +43,30 @@ func NewAzureQueryProvider(logger logr.Logger, config config.Config) (*azureQuer
 		defaultQueryProvider: defaultQueryProvider{
 			Logger: logger,
 			config: config,
+			serviceAccount: serviceAccount,
 		},
 		cred: cred,
 		Subscriptions: *subscriptionList,
 	}, nil
 }
 
-func (a *azureQueryProvider) Query(serviceAccount corev1.ServiceAccount) (*corev1.ServiceAccount, error) {
-	a.serviceAccountQueryParameter = serviceAccountQueryParameter{
-		serviceAccountName:      serviceAccount.Name,
-		serviceAccountNamespace: serviceAccount.Namespace,
-	}
-
-	a.Logger.Info("identified service account with name: " + a.serviceAccountQueryParameter.serviceAccountName + " and namespace: " + a.serviceAccountQueryParameter.serviceAccountNamespace)
+func (a *azureQueryProvider) Query() (*corev1.ServiceAccount, error) {
+	a.Logger.Info("identified service account with name: " + a.serviceAccount.Name + " and namespace: " + a.serviceAccount.Namespace)
 
 	clientid, err := a.searchForClientIdInSubscriptions()
 
 	if err == nil {
-		a.Logger.Info("Setting new annotations for service account", "name", a.serviceAccountQueryParameter.serviceAccountName, "namespace", a.serviceAccountQueryParameter.serviceAccountNamespace, azureClientidAnnotation, clientid, azureTenantIDAnnotation, a.config.TenantID)
-		if serviceAccount.Annotations == nil {
-			serviceAccount.Annotations = make(map[string]string)
+		a.Logger.Info("Setting new annotations for service account", "name", a.serviceAccount.Name, "namespace", a.serviceAccount.Namespace, azureClientidAnnotation, clientid, azureTenantIDAnnotation, a.config.TenantID)
+		if a.serviceAccount.Annotations == nil {
+			a.serviceAccount.Annotations = make(map[string]string)
 		}
-		serviceAccount.Annotations[azureClientidAnnotation] = *clientid
-		serviceAccount.Annotations[azureTenantIDAnnotation] = a.config.TenantID
+		a.serviceAccount.Annotations[azureClientidAnnotation] = *clientid
+		a.serviceAccount.Annotations[azureTenantIDAnnotation] = a.config.TenantID
 	} else {
-		a.Logger.Info("Failed to find clientid for service account. No changes will be patched.", "name", a.serviceAccountQueryParameter.serviceAccountName, "namespace", a.serviceAccountQueryParameter.serviceAccountNamespace)
+		a.Logger.Info("Failed to find clientid for service account. No changes will be patched.", "name", a.serviceAccount.Name, "namespace", a.serviceAccount.Namespace)
 	}
 
-	return &serviceAccount, nil
+	return a.serviceAccount, nil
 }
 
 func (a azureQueryProvider) searchForClientIdInSubscriptions() (*string, error) {
@@ -109,7 +104,7 @@ func (a azureQueryProvider) searchForClientIdInSubscriptions() (*string, error) 
 				return
 			}
 			for _, i := range *federatedIdentityCredentials {
-				if *i.Properties.Issuer == a.config.OidcIssuerUrl && *i.Properties.Subject == "system:serviceaccount:"+a.serviceAccountQueryParameter.serviceAccountNamespace+":"+a.serviceAccountQueryParameter.serviceAccountName {
+				if *i.Properties.Issuer == a.config.OidcIssuerUrl && *i.Properties.Subject == "system:serviceaccount:"+a.serviceAccount.Namespace+":"+a.serviceAccount.Name {
 					a.Logger.Info("Found matching federated identity", "clientId", *identity.Properties.ClientID)
 					ch <- identity.Properties.ClientID
 				}
@@ -226,9 +221,9 @@ func (a *azureQueryProvider) getUamis(cred *azidentity.DefaultAzureCredential) (
 	if a.config.FilterTags != nil {
 		for tagKey, tagValue := range a.config.FilterTags {
 			if tagValue == "<SERVICE_ACCOUNT_NAME>" {
-				tagValue = a.serviceAccountQueryParameter.serviceAccountName
+				tagValue = a.serviceAccount.Name
 			} else if tagValue == "<NAMESPACE>" {
-				tagValue = a.serviceAccountQueryParameter.serviceAccountNamespace
+				tagValue = a.serviceAccount.Namespace
 			}
 			if a.config.ClusterIdentifier != "" {
 				tagKey = a.config.ClusterIdentifier + "-" + tagKey
