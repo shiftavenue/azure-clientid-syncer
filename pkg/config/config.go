@@ -13,9 +13,13 @@ type Config struct {
 	OidcIssuerUrl           string `envconfig:"OIDC_ISSUER_URL"`
 	// add filter tags here via 'export FILTER_TAGS="aks-clientid-syncer:true"'.
 	// There are also two special tags: <NAMESPACE> and <SERVICE_ACCOUNT_NAME> which will be replaced with the actual values of the mutation request during runtime.
+	GcpCloudProjectId string `envconfig:"GCP_CLOUD_PROJECT_ID"`
+
 	FilterTags map[string]string `envconfig:"FILTER_TAGS"`
 	// acts as a prefix for the tags in the azure portal allowing multi tenancy
 	ClusterIdentifier string `envconfig:"CLUSTER_IDENTIFIER"`
+
+	ProviderType string `envconfig:"PROVIDER_TYPE" default:"azure"`
 }
 
 // ParseConfig parses the configuration from env variables
@@ -24,11 +28,17 @@ func ParseConfig() (*Config, error) {
 	if err := envconfig.Process("config", c); err != nil {
 		return c, err
 	}
-	if c.OidcIssuerUrl == "" && !c.AutoDetectOidcIssuerUrl {
-		return nil, errors.New("OIDC_ISSUER_URL or AUTO_DETECT_OIDC_ISSUER_URL must be set")
-	}
-	if c.TenantID == "" {
-		return nil, errors.New("AZURE_TENANT_ID must be set")
+	if c.ProviderType == "azure" {
+		if c.OidcIssuerUrl == "" && !c.AutoDetectOidcIssuerUrl {
+			return nil, errors.New("OIDC_ISSUER_URL or AUTO_DETECT_OIDC_ISSUER_URL must be set")
+		}
+		if c.TenantID == "" {
+			return nil, errors.New("AZURE_TENANT_ID must be set")
+		}
+	} else if c.ProviderType == "gcp" {
+		if c.GcpCloudProjectId == "" {
+			return nil, errors.New("GCP_CLOUD_PROJECT_ID must be set")
+		}
 	}
 
 	return c, nil

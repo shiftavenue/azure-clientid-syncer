@@ -9,24 +9,22 @@ import (
 )
 
 type queryProvider interface {
-	Query(corev1.ServiceAccount) (*corev1.ServiceAccount, error)
+	Query() (*corev1.ServiceAccount, error)
 }
 
-func NewQueryProvider(providerType string, logger logr.Logger, config config.Config) (queryProvider, error) {
-	switch providerType {
+func NewQueryProvider(serviceAccount *corev1.ServiceAccount, logger logr.Logger, config config.Config) (queryProvider, error) {
+	switch config.ProviderType {
 	case "azure":
-		return NewAzureQueryProvider(logger, config)
+		return NewAzureQueryProvider(serviceAccount, logger, config)
+	case "gcp":
+		return NewGCPQueryProvider(serviceAccount, logger, config)
 	default:
-		return nil, errors.New("unknown provider type: " + providerType)
+		return nil, errors.New("unknown provider type: " + config.ProviderType)
 	}
 }
 
 type defaultQueryProvider struct {
 	Logger logr.Logger
 	config config.Config
-}
-
-type serviceAccountQueryParameter struct {
-	serviceAccountName      string
-	serviceAccountNamespace string
+	serviceAccount *corev1.ServiceAccount
 }
