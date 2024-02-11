@@ -2,7 +2,7 @@ apiVersion: v2
 name: azure-clientid-syncer-webhook
 description: A Helm chart to install the azure-clientid-syncer webhook
 type: application
-version: 0.0.5
+version: 0.0.6
 appVersion: 0.0.37
 home: https://github.com/shiftavenue/azure-clientid-syncer
 sources:

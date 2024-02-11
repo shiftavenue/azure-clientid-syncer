@@ -76,7 +76,7 @@ func (g *gcpQueryProvider) Query() (*corev1.ServiceAccount, error) {
 				namespace, serviceAccountName := extractSubstrings(member)
 				if g.serviceAccount.Name == serviceAccountName && g.serviceAccount.Namespace == namespace {
 					fmt.Printf("Project ID: %s, Namespace: %s, Service Account: %s\n", g.config.GcpProjectId, namespace, serviceAccountName)
-					ch <- &member
+					ch <- &sa.Name
 				}
 			}
 		}(ch, sa)

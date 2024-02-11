@@ -93,7 +93,9 @@ az aks get-credentials --resource-group $RG --name $CLUSTER
 
 cat <<EOF >values.yaml
 config:
-  azureTenantID: "$TENANT_ID"
+  azure:
+    tenantID: "$TENANT_ID"
+    enabled: true
   # filterTags: "aks-clientid-syncer:true,namespace:<NAMESPACE>,serviceaccountname:<SERVICE_ACCOUNT_NAME>"
 podLabels:
   azure.workload.identity/use: "true"
@@ -112,8 +114,7 @@ EOF
 fi
 
 NAMESPACE=azure-clientid-syncer-system
-helm repo add azure-clientid-syncer https://shiftavenue.github.io/azure-clientid-syncer
-helm install clientid-syncer-webhook azure-clientid-syncer/azure-clientid-syncer-webhook \
+helm upgrade -i clientid-syncer-webhook charts/azure-clientid-syncer-webhook \
   --namespace $NAMESPACE \
   --create-namespace \
   -f values.yaml
