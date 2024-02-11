@@ -114,8 +114,7 @@ EOF
 fi
 
 NAMESPACE=azure-clientid-syncer-system
-helm repo add azure-clientid-syncer https://shiftavenue.github.io/azure-clientid-syncer
-helm install clientid-syncer-webhook azure-clientid-syncer/azure-clientid-syncer-webhook \
+helm upgrade -i clientid-syncer-webhook charts/azure-clientid-syncer-webhook \
   --namespace $NAMESPACE \
   --create-namespace \
   -f values.yaml
