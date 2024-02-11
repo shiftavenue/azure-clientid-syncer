@@ -1,6 +1,6 @@
 apiVersion: v1
 data:
-  {{ if .Values.config.azure.enabled }}
+  {{ if .Values.config.azure.enabled | default false}}
   PROVIDER_TYPE: azure
   AZURE_AUTHORITY_HOST: {{ .Values.config.azure.environment | default "AzurePublicCloud" }}
   AZURE_TENANT_ID: {{ required "A valid .Values.config.azure.tenantID entry required!" .Values.config.azure.tenantID }}
@@ -9,7 +9,7 @@ data:
   OIDC_ISSUER_URL: {{ .Values.config.azure.oidcIssuerUrl }}
   {{ end }}
   {{ end }}
-  {{ if .Values.config.gcp.enabled }}
+  {{ if .Values.config.gcp.enabled | default false}}
   PROVIDER_TYPE: gcp
   GCP_PROJECT_ID: {{ required "A valid .Values.config.gcp.projectID entry required!" .Values.config.gcp.projectID }}
   {{ end }}

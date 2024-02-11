@@ -93,7 +93,9 @@ az aks get-credentials --resource-group $RG --name $CLUSTER
 
 cat <<EOF >values.yaml
 config:
-  azureTenantID: "$TENANT_ID"
+  azure:
+    tenantID: "$TENANT_ID"
+    enabled: true
   # filterTags: "aks-clientid-syncer:true,namespace:<NAMESPACE>,serviceaccountname:<SERVICE_ACCOUNT_NAME>"
 podLabels:
   azure.workload.identity/use: "true"
