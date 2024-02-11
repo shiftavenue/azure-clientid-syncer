@@ -1,0 +1,10 @@
+config:
+  filterTags: ""
+  clusterIdentifier: ""
+  gcp:
+    enabled: true
+    projectID: ""
+priorityClassName: ""
+serviceAccount:
+  annotations:
+    iam.gke.io/gcp-service-account: identityreader@<projectid>.iam.gserviceaccount.com
