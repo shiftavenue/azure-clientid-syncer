@@ -40,7 +40,7 @@ func (g *gcpQueryProvider) Query() (*corev1.ServiceAccount, error) {
 
 	// List all service accounts
 	req := &adminpb.ListServiceAccountsRequest{
-		Name: fmt.Sprintf("projects/%s", g.config.GcpCloudProjectId),
+		Name: fmt.Sprintf("projects/%s", g.config.GcpProjectId),
 	}
 	it := iamClient.ListServiceAccounts(ctx, req)
 
@@ -73,7 +73,11 @@ func (g *gcpQueryProvider) Query() (*corev1.ServiceAccount, error) {
 			// Iterate over policy bindings
 			for _, member := range policy.Members(gcpRoleName) {
 				fmt.Printf("Found member with role '%s': %s\n", gcpRoleName, member)
-				ch <- &member
+				namespace, serviceAccountName := extractSubstrings(member)
+				if g.serviceAccount.Name == serviceAccountName && g.serviceAccount.Namespace == namespace {
+					fmt.Printf("Project ID: %s, Namespace: %s, Service Account: %s\n", g.config.GcpProjectId, namespace, serviceAccountName)
+					ch <- &member
+				}
 			}
 		}(ch, sa)
 	}
@@ -89,14 +93,10 @@ func (g *gcpQueryProvider) Query() (*corev1.ServiceAccount, error) {
 		return nil, fmt.Errorf("failed to retrieve service account")
 	}
 
-	namespace, serviceAccountName := extractSubstrings(*v)
-	if g.serviceAccount.Name == serviceAccountName && g.serviceAccount.Namespace == namespace {
-		fmt.Printf("Project ID: %s, Namespace: %s, Service Account: %s\n", g.config.GcpCloudProjectId, namespace, serviceAccountName)
-		if g.serviceAccount.Annotations == nil {
-			g.serviceAccount.Annotations = make(map[string]string)
-		}
-		g.serviceAccount.Annotations[gcpServiceAccountAnnotation] = *v
+	if g.serviceAccount.Annotations == nil {
+		g.serviceAccount.Annotations = make(map[string]string)
 	}
+	g.serviceAccount.Annotations[gcpServiceAccountAnnotation] = *v
 
 	return g.serviceAccount, nil
 }

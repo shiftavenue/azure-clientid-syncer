@@ -24,14 +24,22 @@ service:
   type: ClusterIP
   port: 443
   targetPort: 9443
-azureEnvironment: AzurePublicCloud
 # enter your tenant ID here. If you leave this empty, the webhook will try to auto-detect the tenant ID.
 config:
-  azureTenantID: ""
-  autoDetectOidcIssuerUrl: "true"
-  oidcIssuerUrl: ""
   filterTags: ""
   clusterIdentifier: ""
+  # azure specific configurations
+  azure:
+    enabled: false
+    environment: AzurePublicCloud
+    tenantID: ""
+    autoDetectOidcIssuerUrl: "true"
+    oidcIssuerUrl: ""
+  # gcp specific configurations
+  gcp:
+    enabled: false
+    projectID: ""
+
 webhook:
   timeoutSeconds: 15
 metricsAddr: ":8095"
@@ -52,4 +60,6 @@ serviceAccount:
   # e.g. using azure workload identity with this service by setting the client ID and tenant ID:
   # azure.workload.identity/client-id: "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
   # azure.workload.identity/tenant-id: "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+  # e.g. using gcp workload identity with this service by setting the service account email:
+  # iam.gke.io/gcp-service-account=GSA_NAME@GSA_PROJECT.iam.gserviceaccount.com
   annotations: {}

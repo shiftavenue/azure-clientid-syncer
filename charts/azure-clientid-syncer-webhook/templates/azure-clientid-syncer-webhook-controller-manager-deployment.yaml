@@ -42,20 +42,6 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        - name: AUTO_DETECT_OIDC_ISSUER_URL
-          value: '{{ .Values.config.autoDetectOidcIssuerUrl | default "true" }}'
-        {{ if .Values.config.oidcIssuerUrl }}
-        - name: OIDC_ISSUER_URL
-          value: '{{ .Values.config.oidcIssuerUrl }}'
-        {{ end }}
-        {{ if .Values.config.filterTags }}
-        - name: FILTER_TAGS
-          value: '{{ .Values.config.filterTags }}'
-        {{ end }}
-        {{ if .Values.config.clusterIdentifier }}
-        - name: CLUSTER_IDENTIFIER
-          value: '{{ .Values.config.clusterIdentifier }}'
-        {{ end }}
         envFrom:
         - configMapRef:
             name: azure-clientid-syncer-webhook-config

@@ -1,0 +1,14 @@
+config:
+  filterTags: ""
+  clusterIdentifier: ""
+  # azure specific configurations
+  azure:
+    enabled: true
+    environment: AzurePublicCloud
+    tenantID: ""
+    autoDetectOidcIssuerUrl: "true"
+    oidcIssuerUrl: ""
+serviceAccount:
+  annotations:
+    azure.workload.identity/client-id: "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+    azure.workload.identity/tenant-id: "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"

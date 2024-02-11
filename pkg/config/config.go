@@ -13,7 +13,7 @@ type Config struct {
 	OidcIssuerUrl           string `envconfig:"OIDC_ISSUER_URL"`
 	// add filter tags here via 'export FILTER_TAGS="aks-clientid-syncer:true"'.
 	// There are also two special tags: <NAMESPACE> and <SERVICE_ACCOUNT_NAME> which will be replaced with the actual values of the mutation request during runtime.
-	GcpCloudProjectId string `envconfig:"GCP_CLOUD_PROJECT_ID"`
+	GcpProjectId string `envconfig:"GCP_PROJECT_ID"`
 
 	FilterTags map[string]string `envconfig:"FILTER_TAGS"`
 	// acts as a prefix for the tags in the azure portal allowing multi tenancy
@@ -36,7 +36,7 @@ func ParseConfig() (*Config, error) {
 			return nil, errors.New("AZURE_TENANT_ID must be set")
 		}
 	} else if c.ProviderType == "gcp" {
-		if c.GcpCloudProjectId == "" {
+		if c.GcpProjectId == "" {
 			return nil, errors.New("GCP_CLOUD_PROJECT_ID must be set")
 		}
 	}
