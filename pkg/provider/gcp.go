@@ -2,14 +2,12 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"log"
-	"regexp"
-	"sync"
+	"strings"
 
-	admin "cloud.google.com/go/iam/admin/apiv1"
-	"cloud.google.com/go/iam/admin/apiv1/adminpb"
-	"cloud.google.com/go/iam/apiv1/iampb"
+	asset "cloud.google.com/go/asset/apiv1"
+	"cloud.google.com/go/asset/apiv1/assetpb"
 	"github.com/go-logr/logr"
 	"github.com/shiftavenue/azure-clientid-syncer/pkg/config"
 	"google.golang.org/api/iterator"
@@ -31,24 +29,25 @@ func NewGCPQueryProvider(serviceAccount *corev1.ServiceAccount, logger logr.Logg
 }
 
 func (g *gcpQueryProvider) Query() (*corev1.ServiceAccount, error) {
-	// Create a new IAM client
+	// Create a new Asset Inventory client
 	ctx := context.Background()
-	iamClient, err := admin.NewIamClient(ctx)
+	assetClient, err := asset.NewClient(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// List all service accounts
-	req := &adminpb.ListServiceAccountsRequest{
-		Name: fmt.Sprintf("projects/%s", g.config.GcpProjectId),
+	// Find GCP service account that can be impersonated by Kubernetes account using the GCP Asset Inventory
+	// the query looks for all resources on which the Kubernetes service account has the 'roles/iam.workloadIdentityUser' role assigned
+	req := &assetpb.SearchAllIamPoliciesRequest{
+		Scope: fmt.Sprintf("projects/%s", g.config.GcpProjectId),
+		Query: fmt.Sprintf("policy:%s.svc.id.goog[%s/%s] roles:%s", g.config.GcpProjectId, g.serviceAccount.Namespace, g.serviceAccount.Name, gcpRoleName),
 	}
-	it := iamClient.ListServiceAccounts(ctx, req)
+	it := assetClient.SearchAllIamPolicies(ctx, req)
 
-	ch := make(chan *string, 1)
-	wg := sync.WaitGroup{}
-
+	// Iterate through all results and find service account
+	gcpServiceAccountMail := ""
 	for {
-		sa, err := it.Next()
+		res, err := it.Next()
 		if err == iterator.Done {
 			break
 		}
@@ -56,58 +55,21 @@ func (g *gcpQueryProvider) Query() (*corev1.ServiceAccount, error) {
 			return nil, err
 		}
 
-		wg.Add(1)
-
-		go func(ch chan *string, sa *adminpb.ServiceAccount) {
-			defer wg.Done()
-			// Get IAM policy for the service account
-			policyReq := &iampb.GetIamPolicyRequest{
-				Resource: sa.Name,
-			}
-			policy, err := iamClient.GetIamPolicy(ctx, policyReq)
-			if err != nil {
-				log.Printf("failed to retrieve IAM policy: %v", err)
-				return
-			}
-
-			// Iterate over policy bindings
-			for _, member := range policy.Members(gcpRoleName) {
-				fmt.Printf("Found member with role '%s': %s\n", gcpRoleName, member)
-				namespace, serviceAccountName := extractSubstrings(member)
-				if g.serviceAccount.Name == serviceAccountName && g.serviceAccount.Namespace == namespace {
-					fmt.Printf("Project ID: %s, Namespace: %s, Service Account: %s\n", g.config.GcpProjectId, namespace, serviceAccountName)
-					ch <- &sa.Name
+		// The service account resource is returned in the format: //iam.googleapis.com/projects/<project-id>/serviceAccounts/<sa-name>@<project-id>.iam.gserviceaccount.com
+		// extract relevant account mail that can be used in the annotation
+		if res.AssetType == gcpResourceAssetType {
+			// Fail if two or more service accounts were found
+			if gcpServiceAccountMail != "" {
+				return nil, errors.New("multiple service accounts were found, cannot decide which one to use")
+			} else {
+				gcpServiceAccountMail = strings.Split(res.Resource, "/")[6]
+				if g.serviceAccount.Annotations == nil {
+					g.serviceAccount.Annotations = make(map[string]string)
 				}
+				g.serviceAccount.Annotations[gcpServiceAccountAnnotation] = gcpServiceAccountMail
 			}
-		}(ch, sa)
+		}
 	}
-
-	go func() {
-		wg.Wait()
-		ch <- nil
-		close(ch)
-	}()
-
-	v, ok := <-ch
-	if !ok || v == nil {
-		return nil, fmt.Errorf("failed to retrieve service account")
-	}
-
-	if g.serviceAccount.Annotations == nil {
-		g.serviceAccount.Annotations = make(map[string]string)
-	}
-	g.serviceAccount.Annotations[gcpServiceAccountAnnotation] = *v
 
 	return g.serviceAccount, nil
-}
-
-func extractSubstrings(member string) (string, string) {
-	// Use a regular expression to extract the namespace and service account
-	re := regexp.MustCompile(`\[(.*?)\/(.*?)\]`)
-	match := re.FindStringSubmatch(member)
-
-	namespace := match[1]
-	serviceAccount := match[2]
-
-	return namespace, serviceAccount
 }
