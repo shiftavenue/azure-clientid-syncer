@@ -62,6 +62,7 @@ az keyvault wait --resource-group $RG --name $KV_NAME --created
 
 KV_ID="$(az keyvault show \
   --name $KV_NAME \
+  --resource-group $RG \
   --query id \
   -otsv)"
 
