@@ -36,7 +36,9 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
+          file: ./tests/Dockerfile
           tags: ghcr.io/shiftavenue/azure-clientid-syncer:${{ env.SHORT_SHA }}
+
 
   e2e-test-provisioning:
     needs: [push-nightly-docker-image]
