@@ -8,30 +8,16 @@ before:
 
 builds:
   - main: ./cmd/azure-clientid-syncer
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
 
 dockers:
   # You can have multiple Docker images.
-  -
-    # GOOS of the built binaries/packages that should be used.
-    # Default: 'linux'
-    goos: linux
-
-    # GOARCH of the built binaries/packages that should be used.
-    # Default: 'amd64'
-    goarch: amd64
-
-    # GOARM of the built binaries/packages that should be used.
-    # Default: '6'
-    goarm: ""
-
-    # GOAMD64 of the built binaries/packages that should be used.
-    # Default: 'v1'
-    goamd64: "v2"
-
-    # Templates of the Docker image names.
-    #
-    # Templates: allowed
-    image_templates:
+  - image_templates:
       - "ghcr.io/shiftavenue/azure-clientid-syncer:{{ .Env.Version }}"
       - "ghcr.io/shiftavenue/azure-clientid-syncer:latest"
 
