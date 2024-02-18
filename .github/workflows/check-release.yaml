@@ -2,11 +2,11 @@ name: Check Release
 on:
   pull_request:
     types: [opened, edited, reopened, synchronize]
-  paths:
-    - 'go.mod'
-    - 'go.sum'
-    - 'cmd/**'
-    - 'pkg/**'
+    paths:
+      - 'go.mod'
+      - 'go.sum'
+      - 'cmd/**'
+      - 'pkg/**'
 
 permissions:
   contents: write
