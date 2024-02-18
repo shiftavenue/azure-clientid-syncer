@@ -1,0 +1,6 @@
+mode: Mainline
+major-version-bump-message: '(feat|fix)(\(.*\))?!:'
+minor-version-bump-message: 'feat(\(.*\))?:'
+patch-version-bump-message: 'fix(\(.*\))?:'
+no-bump-message: '(none|skip|test|refactor|docs|build|ci|style)(\(.*\))?:'
+commit-message-incrementing: Disabled

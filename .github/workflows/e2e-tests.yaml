@@ -5,7 +5,12 @@ on:
     branches:
     - main
     paths-ignore:
-    - '.github/workflows/*'
+    - '.github/*'
+    - .dockerignore
+    - .gitignore
+    - GitVersion.yml
+    - LICENSE
+    - README.md
 
 permissions:
   id-token: write

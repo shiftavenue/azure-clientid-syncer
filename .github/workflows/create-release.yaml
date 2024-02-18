@@ -1,50 +1,44 @@
-name: Init Release
+name: Release
 on:
-  workflow_dispatch:
-    inputs:
-      TARGET_VERSION:
-        description: 'TARGET_VERSION to build manifests (e.g. 2.5.0-rc1) Note: the `v` prefix is not used'
-        required: true
-        type: string
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: read
 
 jobs:
-  init-release:
-    name: Create new release for ${{ inputs.TARGET_VERSION }}
-    runs-on: ubuntu-22.04
+  release:
+    name: Release
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3        
+      - name: Checkout
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
-          ref: main
-
-      - name: Check if TARGET_VERSION is well formed.
-        run: |
-          set -xue
-          # Target version must not contain 'v' prefix
-          if echo "${{ inputs.TARGET_VERSION }}" | grep -e '^v'; then
-            echo "::error::Target version '${{ inputs.TARGET_VERSION }}' should not begin with a 'v' prefix, refusing to continue." >&2
-            exit 1
-          fi
-
-      - name: Create release v${{ inputs.TARGET_VERSION }}
-        run: |
-          gh release create v${{ inputs.TARGET_VERSION }} --generate-notes
-        env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: "Login to GitHub Container Registry"
-        uses: docker/login-action@v1
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v0
         with:
-          registry: ghcr.io
-          username: ${{github.actor}}
-          password: ${{secrets.GITHUB_TOKEN}}
-
-      - name: Set env
+          versionSpec: '5.x'
+      - name: Determine Version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v0
+      - name: Create Release
         run: |
-          echo "RELEASE_VERSION=${{ inputs.TARGET_VERSION }}" >> $GITHUB_ENV
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "Creating release for $GITHUB_HEAD_REF based PR..."
+          Version="${{ steps.gitversion.outputs.GitVersion_MajorMinorPatch }}"
+          echo "Version: $Version"
+          author=$(git log -1 --pretty=format:'%an')
+          echo "Author: $author"
+          email=$(git log -1 --pretty=format:'%ae')
+          echo "Email: $email"
+          git config --global user.email $email
+          git config --global user.name $author
+          git tag -a "v$Version" -m "v$Version"
+          git push origin "v$Version"
+
+          echo "RELEASE_VERSION=v$Version" >> $GITHUB_ENV
 
       - name: Build and push to ghcr.io with tag latest and ${{ inputs.TARGET_VERSION }}
         uses: docker/build-push-action@v5

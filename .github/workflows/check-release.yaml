@@ -1,0 +1,57 @@
+name: Check Release
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  check-release:
+    name: Check Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v0
+        with:
+          versionSpec: '5.x'
+      - name: Adding PR commit message
+        run: |
+          echo "Checking PR title for $GITHUB_HEAD_REF based PR..."
+          squash_commit_name=$(gh pr view $GITHUB_HEAD_REF --json title -q '.title')
+          git config --global user.email $(git log -1 --pretty=format:'%ae')
+          git config --global user.name $(git log -1 --pretty=format:'%an')
+          git commit --amend -m "$squash_commit_name"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Determine Version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v0
+      - name: Create Release
+        run: |
+          latest_tag=$(git tag -l --sort -version:refname | head -n 1)
+          echo "Latest tag: $latest_tag"
+
+          upcoming_tag="v${{ steps.gitversion.outputs.GitVersion_MajorMinorPatch }}"
+          echo "Upcoming tag: $upcoming_tag"
+
+          if [ -z "$(git tag -l | grep $upcoming_tag)" ]; then
+            echo "Version does not clash with any existing tag"
+            echo "$upcoming_tag is the new version to release"
+          else
+            echo "The version clashes with an existing tag"
+            exit 1
+          fi
+
+          if [ "$latest_tag" != "$upcoming_tag" ]; then
+            echo "Version does not clash with the latest created tag"
+            echo "$upcoming_tag is the new version to release"
+          else
+            echo "The version clashes with the latest created tag"
+            exit 1
+          fi
