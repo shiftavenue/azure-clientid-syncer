@@ -1,4 +1,10 @@
 # .goreleaser.yaml
+release:
+  draft: false
+
+builds:
+  - main: ./cmd/azure-clientid-syncer
+
 dockers:
   # You can have multiple Docker images.
   -
