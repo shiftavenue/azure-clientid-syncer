@@ -29,13 +29,13 @@ changelog:
   use: github
   groups:
     - title: Breaking changes
-      regexp: "(feat|fix)(\(.*\))?!:"
+      regexp: "(feat|fix)(\\(.*\\))?!:"
       order: 0
     - title: Features
-      regexp: "feat(\(.*\))?:"
+      regexp: "feat(\\(.*\\))?:"
       order: 1
     - title: 'Bug fixes'
-      regexp: "fix(\(.*\))?:"
+      regexp: "fix(\\(.*\\))?:"
       order: 2
     - title: Other changes
       order: 999
