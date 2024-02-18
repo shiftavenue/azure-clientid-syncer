@@ -3,6 +3,12 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'go.mod'
+      - 'go.sum'
+      - 'cmd/**'
+      - 'pkg/**'
+    
 
 permissions:
   contents: write
