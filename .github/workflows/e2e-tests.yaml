@@ -56,14 +56,15 @@ jobs:
       
       - name: Create random suffix
         run: |
-          RAND=$(tr -dc a-z </dev/urandom | head -c 4 && echo)
-          echo "RAND=${RAND}" >> .env
+          echo "RAND=${GITHUB_SHA::8}" >> .env
 
       - name: Upload env file
         uses: actions/upload-artifact@v4
         with:
           name: env
           path: .env
+          if-no-files-found: error
+          include-hidden-files: true
 
       - name: Provisioning infrastructure
         run: ./tests/provision-infrastructure.sh "${GITHUB_SHA::8}" "${{ secrets.AZURE_CLIENT_ID }}"
@@ -73,6 +74,7 @@ jobs:
         with:
           name: env
           path: .env
+          include-hidden-files: true
           overwrite: true
 
   e2e-test-azure-service-account:

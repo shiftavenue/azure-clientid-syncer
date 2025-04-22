@@ -35,7 +35,7 @@ az group create -l $LOCATION -n $RG
 az aks create \
   --resource-group $RG \
   --name $CLUSTER \
-  --node-count 1 \
+  --node-count 2 \
   --enable-oidc-issuer \
   --enable-workload-identity \
   --generate-ssh-keys \
