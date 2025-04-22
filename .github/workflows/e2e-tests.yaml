@@ -56,7 +56,7 @@ jobs:
       
       - name: Create random suffix
         run: |
-          RAND=$(tr -dc a-z </dev/urandom | head -c 4 && echo)
+          RAND=$(LC_ALL=C tr -dc a-z </dev/urandom | head -c 4)
           echo "RAND=${RAND}" >> .env
 
       - name: Upload env file
