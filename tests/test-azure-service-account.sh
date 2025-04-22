@@ -4,7 +4,8 @@ set -x
 # read output.json file and set variables
 source $(realpath $(dirname "$0"))/../.env
 az aks get-credentials --resource-group $RG --name $CLUSTER
-apt-get update && apt-get install -y jq
+sudo apt-get update
+sudo apt-get install -y jq
 
 TEST_IDENTITY_NAME=testsa
 
