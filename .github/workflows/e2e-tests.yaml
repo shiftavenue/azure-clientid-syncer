@@ -58,11 +58,16 @@ jobs:
         run: |
           echo "RAND=${GITHUB_SHA::8}" >> .env
 
+      - name: Read random suffix
+        run: |
+          cat .env
+
       - name: Upload env file
         uses: actions/upload-artifact@v4
         with:
           name: env
-          path: .env
+          path: ./.env
+          if-no-files-found: error
 
       - name: Provisioning infrastructure
         run: ./tests/provision-infrastructure.sh "${GITHUB_SHA::8}" "${{ secrets.AZURE_CLIENT_ID }}"
