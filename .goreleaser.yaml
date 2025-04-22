@@ -10,7 +10,6 @@ before:
 
 builds:
   - main: ./cmd/azure-clientid-syncer
-    tool: "go1.24.1"
     goos:
       - linux
       - darwin
